@@ -95,6 +95,21 @@ er wird ab Inbetriebnahme täglich gesnapshottet.
 
 ## Deployment (Hetzner)
 
+Auf einer frischen Debian- oder Ubuntu-Kiste als root:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
+```
+
+Das Skript fragt Domain, Helius-Key und Wallet ab, erzeugt den Access-Token
+selbst und richtet Dienst, nginx und Zertifikat ein. Am Ende druckt es einen
+Link, der Token und Wallet beim Öffnen in die App überträgt — auf einem
+Handy muss dadurch nichts abgetippt werden. Ein erneuter Aufruf aktualisiert
+den Checkout und behält den bestehenden Token.
+
+<details>
+<summary>Dieselben Schritte einzeln</summary>
+
 ```bash
 # Dienstkonto ohne Login und ohne Home
 useradd --system --no-create-home --shell /usr/sbin/nologin tracker
@@ -116,12 +131,20 @@ ln -s /opt/tracker/deploy/nginx.conf /etc/nginx/sites-enabled/tracker
 certbot --nginx -d tracker.example.de
 ```
 
+</details>
+
+`deploy/nginx.conf` ist bewusst reines HTTP. Certbot schreibt den TLS-Block
+selbst hinein. Ein vorab eingetragenes `listen 443 ssl` würde nginx ohne
+vorhandenes Zertifikat gar nicht starten lassen, und eine vorzeitige
+HTTPS-Weiterleitung verhindert zusätzlich, dass certbot seine eigene
+HTTP-01-Challenge beantworten kann.
+
 TLS ist nicht optional: ohne HTTPS registriert kein Browser den Service
 Worker, und ohne den ist die App nicht installierbar und nicht offline
-nutzbar. Sobald die Instanz aus dem Netz erreichbar ist, `ACCESS_TOKEN` in
-`.env` setzen und denselben Wert unter *Setup* in der PWA eintragen — sonst
-kann jeder mit der URL deine Wallet-Daten lesen und deine API-Credits
-verbrennen.
+nutzbar.
+
+Der `ACCESS_TOKEN` schützt die gesamte API. Ohne ihn liest jeder, der die
+URL kennt, deine Wallet-Historie und verbrennt deine Helius-Credits.
 
 ## Tests
 

@@ -5,6 +5,8 @@
    from the cache with no network at all.
 */
 
+import { saveSettings } from './store.js';
+import { toast } from './ui.js';
 import { initCheck } from './views/check.js';
 import { initCoins } from './views/coins.js';
 import { initSetup } from './views/setup.js';
@@ -47,11 +49,53 @@ function show(name) {
   views[name]?.onShow?.();
 }
 
+/* Tap-to-configure.
+
+   The installer prints a link carrying the access token so a 48-character
+   secret never has to be typed on a phone keyboard. The values are moved
+   into local settings and stripped from the URL immediately, so the token
+   does not linger in history or get handed over by an accidental share.
+*/
+function consumeSetupLink() {
+  const hash = location.hash;
+  const query = hash.indexOf('?');
+  if (query === -1) return false;
+
+  const params = new URLSearchParams(hash.slice(query + 1));
+  const patch = {};
+  const token = params.get('token');
+  const wallet = params.get('wallet');
+  if (token) patch.token = token;
+  if (wallet) patch.wallet = wallet;
+
+  // replaceState, not location.replace: it drops the secret from the current
+  // history entry without triggering a navigation.
+  try {
+    history.replaceState(
+      null,
+      '',
+      `${location.pathname}${location.search}${hash.slice(0, query)}`,
+    );
+  } catch {
+    location.hash = hash.slice(0, query);
+  }
+
+  if (Object.keys(patch).length === 0) return false;
+
+  saveSettings(patch);
+  const saved = [token && 'Token', wallet && 'Wallet'].filter(Boolean).join(' und ');
+  setTimeout(() => toast(`${saved} übernommen`), 300);
+  return true;
+}
+
 function route() {
   show((location.hash.replace(/^#\/?/, '') || 'check').split('?')[0]);
 }
 
 function boot() {
+  // Before the views read settings, so Setup renders the new values.
+  consumeSetupLink();
+
   views.check = initCheck();
   views.wallet = initWallet();
   views.coins = initCoins();
