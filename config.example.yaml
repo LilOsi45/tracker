@@ -1,0 +1,39 @@
+# Tunables. Copy to config.yaml — it is read fresh on every request, so
+# changes take effect without restarting the service.
+
+app:
+  timezone: Europe/Berlin
+  # Wallets the scheduler keeps in sync automatically.
+  wallets: []
+  sync_interval_minutes: 10
+  coin_refresh_minutes: 15
+
+coins:
+  # Mints you always want in the overview.
+  watchlist: []
+  discovery:
+    # Paid-placement feeds. Not a launch feed — see docs/data-sources.md.
+    token_profiles: true
+    token_boosts: true
+    # Free-text DexScreener searches, e.g. ["SOL/USDC", "pump"].
+    search_terms: []
+
+# Phase 2. Present here so the shape is settled; not read yet.
+screener:
+  poll_seconds: 45
+  filters:
+    mint_authority_revoked: true
+    freeze_authority_revoked: true
+    min_lp_locked_pct: 90
+    min_liquidity_usd: 15000
+    min_holders: 150
+    min_age_minutes: 20
+    max_age_minutes: 240
+    max_top10_pct: 25
+    # A band, not a ceiling: below is dead, above is wash trading.
+    volume_liquidity_ratio_min: 0.5
+    volume_liquidity_ratio_max: 8.0
+  discord:
+    enabled: false
+    # Do not put the webhook URL here — it belongs in .env.
+    mention: ""
