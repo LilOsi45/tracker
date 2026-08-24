@@ -1,0 +1,24 @@
+[Unit]
+Description=Solana Tracker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tracker
+WorkingDirectory=/opt/tracker
+ExecStart=/opt/tracker/backend/.venv/bin/uvicorn app.main:app \
+    --app-dir /opt/tracker/backend \
+    --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+# SQLite and the .env live in the working directory, nothing else is written.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/tracker/data
+
+[Install]
+WantedBy=multi-user.target

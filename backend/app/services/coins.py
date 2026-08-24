@@ -247,7 +247,7 @@ def token_links(mint: str) -> dict[str, str]:
     return {
         "axiom": f"https://axiom.trade/t/{mint}",
         "rugcheck": f"https://rugcheck.xyz/tokens/{mint}",
-        "bubblemaps": f"https://app.bubblemaps.io/sol/token/{mint}",
+        "bubblemaps": f"https://v2.bubblemaps.io/map?address={mint}&chain=solana",
         "dexscreener": f"https://dexscreener.com/solana/{mint}",
         "solscan": f"https://solscan.io/token/{mint}",
     }

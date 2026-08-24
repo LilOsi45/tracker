@@ -76,8 +76,14 @@ class DexScreenerClient:
     def __init__(self, client: httpx.AsyncClient) -> None:
         self._client = client
 
-    async def tokens(self, mints: list[str]) -> dict[str, dict[str, Any]]:
-        """Canonical pair per mint. Accepts up to 30 addresses per call."""
+    async def tokens(
+        self, mints: list[str], *, attempts: int = 5, max_delay: float = 60.0
+    ) -> dict[str, dict[str, Any]]:
+        """Canonical pair per mint. Accepts up to 30 addresses per call.
+
+        The scheduled refresh keeps the full retry ladder; callers on a
+        request path pass a smaller budget.
+        """
         unique = list(dict.fromkeys(m for m in mints if m))
         out: dict[str, dict[str, Any]] = {}
 
@@ -89,6 +95,8 @@ class DexScreenerClient:
                     "GET",
                     f"{BASE}/latest/dex/tokens/{','.join(chunk)}",
                     limiter=_pairs_limiter,
+                    max_attempts=attempts,
+                    max_delay=max_delay,
                 )
             except Exception as exc:
                 log.warning("DexScreener token lookup failed: %s", exc)

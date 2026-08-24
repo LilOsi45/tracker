@@ -5,14 +5,31 @@ FastAPI-Backend.
 
 ## Stand
 
-**Phase 1 — Backend: fertig.** Wallet-Tracker (FIFO-PnL, offene Positionen,
-Trade-Historie, CSV-Export) und Coin-Übersicht (DexScreener + RugCheck).
-
-**Phase 1 — Frontend: offen.** Wartet auf den HTML-Prototyp der
-Pre-Buy-Checkliste, der als Design-Basis dient.
+**Phase 1: fertig und deploybar.** Backend (Wallet-Tracker mit FIFO-PnL,
+Coin-Übersicht, CSV-Export) und PWA (Pre-Buy-Check, Wallet, Coins, Setup),
+installierbar auf dem Homescreen und offline nutzbar.
 
 **Phase 2 — Screener + Discord: offen.** Die Filter-Konfiguration liegt
 bereits in `config.example.yaml`, wird aber noch nicht gelesen.
+
+## Frontend
+
+Vanilla HTML/CSS/JS als ES-Module, kein Build-Step. Das Backend liefert
+`frontend/` direkt aus, die PWA spricht also standardmäßig mit derselben
+Herkunft — unter *Setup* lässt sich eine abweichende API-URL setzen.
+
+Gestaltungsregel, an die sich `css/app.css` hält: **eine** Ebene sichtbarer
+Struktur. Gruppiert wird über Weißraum, nicht über Rahmen und Panels; eine
+Haarlinie nur dort, wo zwei Zeilen sonst ineinanderlaufen. Pro Screen trägt
+genau **ein** Element Gewicht — das Verdict auf Check, der Tages-PnL auf
+Wallet. Alles andere tritt zurück, damit diese eine Sache in einem Blick
+lesbar ist.
+
+Die Icons sind generiert, nicht eingecheckt-und-vergessen:
+
+```bash
+python3 scripts/make_icons.py
+```
 
 ## Setup
 
@@ -75,6 +92,28 @@ Steht vollständig in [`docs/data-sources.md`](docs/data-sources.md). Kurz:
 DexScreener hat keinen Neuemissions-Feed, Holder-Zahlen sind lückenhaft,
 und historischer unrealisierter PnL ist nicht rückwirkend rekonstruierbar —
 er wird ab Inbetriebnahme täglich gesnapshottet.
+
+## Deployment (Hetzner)
+
+```bash
+git clone <repo> /opt/tracker && cd /opt/tracker
+python3 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements.txt
+cp .env.example .env && cp config.example.yaml config.yaml   # Key + Wallet eintragen
+install -o tracker -g tracker -d /opt/tracker/data
+
+cp deploy/tracker.service /etc/systemd/system/
+systemctl enable --now tracker
+
+ln -s /opt/tracker/deploy/nginx.conf /etc/nginx/sites-enabled/tracker
+certbot --nginx -d tracker.example.de
+```
+
+TLS ist nicht optional: ohne HTTPS registriert kein Browser den Service
+Worker, und ohne den ist die App nicht installierbar und nicht offline
+nutzbar. Sobald die Instanz aus dem Netz erreichbar ist, `ACCESS_TOKEN` in
+`.env` setzen und denselben Wert unter *Setup* in der PWA eintragen — sonst
+kann jeder mit der URL deine Wallet-Daten lesen und deine API-Credits
+verbrennen.
 
 ## Tests
 

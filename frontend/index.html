@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0E14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tracker">
+<title>Tracker</title>
+
+<link rel="manifest" href="./app.webmanifest">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/app.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="topbar">
+    <span class="topbar__title" id="viewTitle">Pre-Buy</span>
+    <span class="topbar__slot" id="topbarSlot"></span>
+  </header>
+
+  <main class="stage">
+
+    <!-- ============================ CHECK ============================ -->
+    <section class="view" id="view-check" hidden>
+
+      <div class="verdict" id="verdict" role="status" aria-live="polite">
+        <p class="verdict__word" id="verdictWord">Bereit</p>
+        <p class="verdict__note" id="verdictNote">Contract einfügen, dann durchgehen</p>
+      </div>
+
+      <div class="block">
+        <input class="field field--ca" type="text" id="ca" placeholder="Contract-Adresse"
+               autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+        <nav class="jump" id="jump" aria-label="Token öffnen in">
+          <a data-jump="rugcheck" aria-disabled="true" target="_blank" rel="noopener">RugCheck</a>
+          <a data-jump="bubblemaps" aria-disabled="true" target="_blank" rel="noopener">Bubblemaps</a>
+          <a data-jump="axiom" aria-disabled="true" target="_blank" rel="noopener">Axiom</a>
+          <a data-jump="dexscreener" aria-disabled="true" target="_blank" rel="noopener">DexScreener</a>
+          <a data-jump="solscan" aria-disabled="true" target="_blank" rel="noopener">Solscan</a>
+        </nav>
+      </div>
+
+      <div class="block">
+        <p class="label label--danger">Abbruch <span>1 Treffer und du bist raus</span></p>
+        <div id="hard"></div>
+      </div>
+
+      <div class="block">
+        <p class="label">Warnsignale <span>ab 2 kritisch</span></p>
+        <div id="soft"></div>
+      </div>
+
+      <div class="block" id="posBlock">
+        <p class="label">Position</p>
+        <div class="pair">
+          <label>
+            <span>Budget €</span>
+            <input class="field" type="number" id="budget" value="300" min="0" step="10" inputmode="decimal">
+          </label>
+          <label>
+            <span>Pro Trade %</span>
+            <input class="field" type="number" id="risk" value="5" min="1" max="25" step="1" inputmode="decimal">
+          </label>
+        </div>
+        <dl class="readout">
+          <div><dt>Einsatz</dt><dd id="oSize">15,00 €</dd></div>
+          <div><dt>Bei 2× raus</dt><dd id="oExit">15,00 €</dd></div>
+          <div><dt>Trades bis leer</dt><dd id="oRuns">20</dd></div>
+        </dl>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn--win" id="bWin">Gewinn</button>
+        <button type="button" class="btn btn--loss" id="bLoss">Verlust</button>
+        <button type="button" class="btn" id="bReset">Neu</button>
+      </div>
+
+      <ul class="creed">
+        <li>Positionsgröße ist fix, kein Bauchgefühl</li>
+        <li>Bei 2× den Einsatz rausnehmen</li>
+        <li>Kein Nachkaufen in Verlusten</li>
+        <li>3 Verluste in Folge → Tag beenden</li>
+        <li>Nur Kapital, das komplett auf null darf</li>
+      </ul>
+
+    </section>
+
+    <!-- ============================ WALLET =========================== -->
+    <section class="view" id="view-wallet" hidden>
+
+      <div class="hero" id="walletHero">
+        <p class="hero__label">Heute realisiert</p>
+        <p class="hero__value" id="pnlToday">—</p>
+        <p class="hero__sub" id="pnlTodayFiat"></p>
+      </div>
+
+      <dl class="readout readout--split" id="walletStats">
+        <div><dt>Unrealisiert</dt><dd id="pnlUnreal">—</dd></div>
+        <div><dt>Offene Positionen</dt><dd id="posCount">—</dd></div>
+        <div><dt>Realisiert gesamt</dt><dd id="pnlLifetime">—</dd></div>
+      </dl>
+
+      <div class="block">
+        <p class="label">30 Tage <span id="chartNote"></span></p>
+        <div id="chart" class="chart"></div>
+      </div>
+
+      <div class="block">
+        <p class="label">Offen <span id="posNote"></span></p>
+        <div id="positions" class="list"></div>
+      </div>
+
+      <div class="block">
+        <p class="label">Historie <span id="tradesNote"></span></p>
+        <div id="trades" class="list"></div>
+        <button type="button" class="btn btn--ghost" id="moreTrades" hidden>Mehr laden</button>
+      </div>
+
+      <div class="actions actions--two">
+        <button type="button" class="btn" id="bSync">Sync</button>
+        <button type="button" class="btn" id="bExport">CSV</button>
+      </div>
+
+      <p class="footnote" id="walletFootnote"></p>
+
+    </section>
+
+    <!-- ============================ COINS ============================ -->
+    <section class="view" id="view-coins" hidden>
+
+      <div class="block">
+        <input class="field" type="search" id="coinSearch" placeholder="Symbol oder Mint"
+               autocapitalize="off" autocorrect="off" spellcheck="false">
+        <div class="chips" id="coinFilters">
+          <button type="button" class="chip" data-filter="authorities">Authority revoked</button>
+          <button type="button" class="chip" data-filter="lp">LP &gt; 15k</button>
+          <button type="button" class="chip" data-filter="top10">Top-10 &lt; 25%</button>
+          <button type="button" class="chip" data-filter="fresh">&lt; 4 h</button>
+        </div>
+        <div class="chips chips--sort" id="coinSort">
+          <button type="button" class="chip" data-sort="liquidity_usd">LP</button>
+          <button type="button" class="chip" data-sort="market_cap">MCap</button>
+          <button type="button" class="chip" data-sort="volume_24h">Vol</button>
+          <button type="button" class="chip" data-sort="pair_created_at">Alter</button>
+          <button type="button" class="chip" data-sort="top10_pct">Top-10</button>
+        </div>
+      </div>
+
+      <div id="coins" class="list"></div>
+
+      <div class="actions actions--two">
+        <button type="button" class="btn" id="bCoinRefresh">Aktualisieren</button>
+        <button type="button" class="btn btn--ghost" id="bCoinMore" hidden>Mehr</button>
+      </div>
+
+      <p class="footnote" id="coinsFootnote"></p>
+
+    </section>
+
+    <!-- ============================ SETUP ============================ -->
+    <section class="view" id="view-setup" hidden>
+
+      <div class="block">
+        <p class="label">Backend</p>
+        <label class="stack">
+          <span>API-URL</span>
+          <input class="field" type="url" id="cfgApi" placeholder="https://tracker.example.de"
+                 autocapitalize="off" autocorrect="off" spellcheck="false">
+        </label>
+        <label class="stack">
+          <span>Access-Token</span>
+          <input class="field" type="password" id="cfgToken" placeholder="leer lassen wenn nicht gesetzt"
+                 autocomplete="off">
+        </label>
+        <p class="hint">Leer = gleiche Herkunft wie diese Seite.</p>
+      </div>
+
+      <div class="block">
+        <p class="label">Wallet</p>
+        <label class="stack">
+          <span>Solana-Adresse</span>
+          <input class="field" type="text" id="cfgWallet" placeholder="Adresse"
+                 autocapitalize="off" autocorrect="off" spellcheck="false">
+        </label>
+      </div>
+
+      <div class="actions actions--two">
+        <button type="button" class="btn btn--win" id="bSave">Sichern</button>
+        <button type="button" class="btn" id="bTest">Verbindung prüfen</button>
+      </div>
+
+      <p class="footnote" id="setupStatus"></p>
+
+      <div class="block">
+        <p class="label">Daten</p>
+        <p class="hint" id="offlineHint">Prüfliste und Positionsrechner laufen ohne Netz.
+          Wallet- und Coin-Daten werden zwischengespeichert und offline aus dem Cache gezeigt.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <nav class="tabs" id="tabs">
+    <a href="#/check"  data-tab="check">Check</a>
+    <a href="#/wallet" data-tab="wallet">Wallet</a>
+    <a href="#/coins"  data-tab="coins">Coins</a>
+    <a href="#/setup"  data-tab="setup">Setup</a>
+  </nav>
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

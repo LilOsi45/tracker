@@ -1,0 +1,642 @@
+/* ---------------------------------------------------------------------------
+   Tracker — dark, mobile-first.
+
+   Design rule this file follows: exactly one layer of visible structure.
+   Grouping is done with space, not with borders and panels. A hairline is
+   only allowed where two rows would otherwise touch ambiguously. Exactly one
+   element on screen carries weight — the verdict on Check, the day's PnL on
+   Wallet. Everything else recedes so those read in a glance.
+--------------------------------------------------------------------------- */
+
+:root {
+  --bg: #0B0E14;
+  --raise: #131922;
+  --line: #1E2632;
+  --bone: #E8E4DA;
+  --dim: #6C7889;
+  --faint: #49535F;
+  --brass: #C8873A;
+  --red: #C1443B;
+  --green: #4A9B7F;
+
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The condensed fallbacks matter: the display type is sized so that the
+     longest word still fits at 390px even when none of them are available
+     and the browser lands on a normal-width sans. */
+  --cond: 'Barlow Condensed', 'Avenir Next Condensed', 'Roboto Condensed',
+          'Arial Narrow', system-ui, sans-serif;
+
+  --gutter: 20px;
+  --stack: 38px;
+  --radius: 4px;
+
+  --tap: 48px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--bone);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+  /* Nothing here is meant to scroll sideways. Without this, one oversized
+     word in a fallback font shifts the entire layout. */
+  overflow-x: clip;
+}
+
+.shell {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ------------------------------- top bar ------------------------------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 16px) var(--gutter) 4px;
+}
+
+.topbar__title {
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.topbar__slot {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  text-align: right;
+}
+
+.topbar__slot.is-hot { color: var(--red); }
+
+/* -------------------------------- stage -------------------------------- */
+
+.stage {
+  flex: 1;
+  padding: 0 var(--gutter) 32px;
+}
+
+.view { display: block; }
+.view[hidden] { display: none; }
+
+.block { margin-top: var(--stack); }
+.block:first-child { margin-top: 24px; }
+
+/* The one place a section announces itself. Deliberately quiet: the eye
+   should land on the content, not on the label. */
+.label {
+  margin: 0 0 14px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.label span {
+  margin-left: 10px;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  color: var(--faint);
+}
+
+.label--danger { color: var(--red); }
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--faint);
+}
+
+.footnote {
+  margin: 28px 0 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--faint);
+}
+
+.footnote:empty { display: none; }
+
+/* ------------------------------- verdict ------------------------------- */
+
+/* The single loudest thing in the app. Neutral state has no container at
+   all — it is just type on the background. Colour and a tinted field only
+   appear when there is something to say. */
+.verdict {
+  margin: 12px calc(var(--gutter) * -1) 0;
+  padding: 30px var(--gutter) 34px;
+  text-align: center;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.verdict__word {
+  margin: 0;
+  font-family: var(--cond);
+  font-weight: 700;
+  /* Sized for the longest word in the set ("FEIERABEND", 10 characters). */
+  font-size: clamp(32px, 12vw, 48px);
+  line-height: 0.95;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--dim);
+  overflow-wrap: anywhere;
+}
+
+.verdict__note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--faint);
+}
+
+.verdict.is-go .verdict__word { color: var(--green); }
+.verdict.is-go .verdict__note { color: var(--dim); }
+
+.verdict.is-warn .verdict__word { color: var(--brass); }
+.verdict.is-warn .verdict__note { color: var(--dim); }
+
+.verdict.is-stop {
+  background: rgba(193, 68, 59, 0.11);
+}
+.verdict.is-stop .verdict__word { color: var(--red); }
+.verdict.is-stop .verdict__note { color: #D98A83; }
+
+/* -------------------------------- fields ------------------------------- */
+
+.field {
+  width: 100%;
+  min-height: var(--tap);
+  background: var(--raise);
+  border: 0;
+  border-radius: var(--radius);
+  color: var(--bone);
+  font-family: inherit;
+  font-size: 15px;
+  padding: 12px 14px;
+  appearance: none;
+}
+
+.field::placeholder { color: var(--faint); }
+
+.field:focus {
+  outline: 2px solid var(--brass);
+  outline-offset: -2px;
+}
+
+.field--ca { font-size: 13px; letter-spacing: 0.02em; }
+
+label.stack {
+  display: block;
+  margin-bottom: 14px;
+}
+
+label.stack > span,
+.pair label > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* -------------------------------- jump --------------------------------- */
+
+/* Link row, not a button grid. No borders — the words are the affordance. */
+.jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  margin-top: 14px;
+}
+
+.jump a {
+  flex: 0 0 auto;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px 0 0;
+  margin-right: 4px;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--brass);
+  text-decoration: none;
+}
+
+.jump a[aria-disabled="true"] {
+  color: var(--faint);
+  pointer-events: none;
+}
+
+.jump a:active { color: var(--bone); }
+
+/* -------------------------------- checks ------------------------------- */
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-height: var(--tap);
+  padding: 11px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.check + .check { border-top: 1px solid var(--line); }
+
+.check__box {
+  flex: 0 0 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 1.5px solid var(--faint);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: transparent;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.check__text {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--bone);
+}
+
+.check__hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--faint);
+}
+
+.check[data-on="true"] .check__box {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.check[data-on="true"] .check__text { color: var(--red); }
+
+.check--soft[data-on="true"] .check__box {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: var(--bg);
+}
+.check--soft[data-on="true"] .check__text { color: var(--brass); }
+
+.check:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* ------------------------------- readout ------------------------------- */
+
+.readout { margin: 18px 0 0; }
+
+.readout > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+}
+
+.readout > div + div { border-top: 1px solid var(--line); }
+
+.readout dt {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.readout dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bone);
+  font-variant-numeric: tabular-nums;
+}
+
+.readout--split { margin-top: 26px; }
+
+.readout dd.is-up { color: var(--green); }
+.readout dd.is-down { color: var(--red); }
+.readout dd.is-muted { color: var(--faint); }
+
+.is-locked {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+/* --------------------------------- hero -------------------------------- */
+
+.hero { padding: 20px 0 4px; }
+
+.hero__label {
+  margin: 0 0 10px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.hero__value {
+  margin: 0;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(32px, 11vw, 46px);
+  line-height: 0.98;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--bone);
+  overflow-wrap: anywhere;
+}
+
+.hero__value.is-up { color: var(--green); }
+.hero__value.is-down { color: var(--red); }
+
+.hero__sub {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------- chart -------------------------------- */
+
+/* No axes, no gridlines, no legend. A zero baseline and the bars. */
+.chart { width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .bar-up { fill: var(--green); }
+.chart .bar-down { fill: var(--red); }
+.chart .baseline { stroke: var(--line); stroke-width: 1; }
+.chart .cume { fill: none; stroke: var(--brass); stroke-width: 1.5; opacity: 0.75; }
+
+.chart__caption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------- lists -------------------------------- */
+
+.list > * + * { border-top: 1px solid var(--line); }
+
+.row {
+  display: block;
+  padding: 14px 0;
+  min-height: var(--tap);
+  color: inherit;
+  text-decoration: none;
+}
+
+.row__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row__name {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--bone);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__value {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__value.is-up { color: var(--green); }
+.row__value.is-down { color: var(--red); }
+.row__value.is-muted { color: var(--faint); }
+
+.row__meta {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.row__meta b {
+  font-weight: 500;
+  color: var(--dim);
+}
+
+/* One metric = one unbreakable unit, so a wrap never orphans a value from
+   its label. */
+.row__meta .nb { white-space: nowrap; }
+
+.row__meta .flag-bad { color: var(--red); }
+.row__meta .flag-ok { color: var(--dim); }
+.row__meta .unknown { color: var(--faint); font-style: italic; }
+
+.row__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+  margin-top: 9px;
+}
+
+.row__links a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--brass);
+  text-decoration: none;
+}
+
+.empty {
+  padding: 26px 0;
+  font-size: 12.5px;
+  color: var(--faint);
+  text-align: center;
+}
+
+/* ------------------------------- buttons ------------------------------- */
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: var(--stack);
+}
+
+.actions--two { grid-template-columns: repeat(2, 1fr); }
+
+.btn {
+  min-height: var(--tap);
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 12px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.btn:active { background: var(--raise); }
+.btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.btn[disabled] { opacity: 0.4; pointer-events: none; }
+
+.btn--win { border-color: rgba(74, 155, 127, 0.45); color: var(--green); }
+.btn--loss { border-color: rgba(193, 68, 59, 0.45); color: var(--red); }
+
+.btn--ghost {
+  width: 100%;
+  margin-top: 18px;
+  border-style: dashed;
+}
+
+/* -------------------------------- chips -------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.chip {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+.chips--sort .chip[aria-pressed="true"]::after {
+  content: " ↓";
+}
+
+.chips--sort .chip[aria-pressed="true"][data-dir="asc"]::after {
+  content: " ↑";
+}
+
+/* -------------------------------- creed -------------------------------- */
+
+/* House rules. Present, permanently, but never competing for attention. */
+.creed {
+  margin: var(--stack) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11.5px;
+  line-height: 1.9;
+  color: var(--faint);
+}
+
+.creed li::before {
+  content: "— ";
+  color: var(--line);
+}
+
+/* --------------------------------- tabs -------------------------------- */
+
+.tabs {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabs a {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  text-decoration: none;
+}
+
+.tabs a[aria-current="page"] { color: var(--brass); }
+.tabs a:active { background: var(--raise); }
+
+/* -------------------------------- toast -------------------------------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 72px);
+  transform: translateX(-50%);
+  max-width: calc(100% - 40px);
+  padding: 11px 18px;
+  border-radius: var(--radius);
+  background: var(--raise);
+  border: 1px solid var(--line);
+  color: var(--bone);
+  font-size: 12.5px;
+  text-align: center;
+  z-index: 20;
+}
+
+.toast.is-error { border-color: var(--red); color: #E39089; }
+
+/* ------------------------------ preferences ---------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

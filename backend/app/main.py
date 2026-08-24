@@ -10,7 +10,6 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import REPO_DIR, get_settings, load_yaml_config
@@ -118,12 +117,6 @@ async def health() -> dict:
 
 
 if FRONTEND_DIR.exists():
+    # The PWA routes on the hash, so every deep link is still "/" as far as
+    # the server is concerned and html=True is all the fallback needed.
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
-
-    @app.get("/{path:path}", include_in_schema=False)
-    async def spa_fallback(path: str) -> FileResponse:
-        """Serve index.html for client-side routes so deep links work offline."""
-        candidate = FRONTEND_DIR / path
-        if candidate.is_file():
-            return FileResponse(candidate)
-        return FileResponse(FRONTEND_DIR / "index.html")

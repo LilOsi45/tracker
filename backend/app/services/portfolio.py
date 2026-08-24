@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
-import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -50,15 +50,15 @@ def _meta_map(conn, mints: list[str]) -> dict[str, dict[str, Any]]:
     }
 
 
-async def _current_prices(
+# Hard ceiling for the price lookups behind one screen refresh. Past this we
+# render what we have and mark the rest unpriced — a phone waiting a minute on
+# a dead upstream is worse than a screen that says "kein Preis".
+PRICE_BUDGET_SECONDS = 8.0
+
+
+async def _fetch_prices(
     http: httpx.AsyncClient, mints: list[str]
 ) -> tuple[dict[str, float], float | None]:
-    """USD price per mint plus the current SOL/USD rate.
-
-    Jupiter is the primary source. Memecoins that have already died are not
-    routable and simply have no price; we fall back to DexScreener's last
-    traded price for those rather than showing a stale entry price as current.
-    """
     price_client = PriceClient(http)
     prices = await price_client.spot_usd(mints + [WSOL_MINT])
     sol_usd = prices.pop(WSOL_MINT, None)
@@ -66,7 +66,9 @@ async def _current_prices(
     unpriced = [m for m in mints if m not in prices]
     if unpriced:
         try:
-            fallback = await DexScreenerClient(http).tokens(unpriced)
+            fallback = await DexScreenerClient(http).tokens(
+                unpriced, attempts=1, max_delay=1.0
+            )
         except Exception as exc:
             log.warning("DexScreener price fallback failed: %s", exc)
             fallback = {}
@@ -75,6 +77,22 @@ async def _current_prices(
                 prices[mint] = pair["price_usd"]
 
     return prices, sol_usd
+
+
+async def _current_prices(
+    http: httpx.AsyncClient, mints: list[str]
+) -> tuple[dict[str, float], float | None]:
+    """USD price per mint plus the current SOL/USD rate.
+
+    Jupiter is the primary source. Memecoins that have already died are not
+    routable and simply have no price; DexScreener's last traded price is the
+    fallback, rather than showing a stale entry price as if it were current.
+    """
+    try:
+        return await asyncio.wait_for(_fetch_prices(http, mints), PRICE_BUDGET_SECONDS)
+    except asyncio.TimeoutError:
+        log.warning("price lookup exceeded %.0fs, rendering without prices", PRICE_BUDGET_SECONDS)
+        return {}, None
 
 
 async def open_positions(http: httpx.AsyncClient, wallet: str) -> dict[str, Any]:

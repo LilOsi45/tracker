@@ -50,11 +50,16 @@ async def request_json(
     *,
     limiter: RateLimiter | None = None,
     max_attempts: int = 5,
+    max_delay: float = 60.0,
     **kwargs: Any,
 ) -> Any:
     """Issue a request, honouring 429/Retry-After and retrying transient failures.
 
     Raises ApiError on 4xx that is not 429, since retrying those never helps.
+
+    `max_delay` caps the backoff. Background jobs want the full ladder; an
+    endpoint a phone is waiting on wants a couple of seconds and an answer,
+    even if that answer is "no price available".
     """
     delay = 1.0
     last_error: Exception | None = None
@@ -73,7 +78,7 @@ async def request_json(
                 wait = float(retry_after) if retry_after and retry_after.isdigit() else delay
                 log.warning("429 from %s, waiting %.1fs", url, wait)
                 await asyncio.sleep(wait)
-                delay = min(delay * 2, 60.0)
+                delay = min(delay * 2, max_delay)
                 continue
             if 400 <= response.status_code < 500:
                 raise ApiError(
@@ -87,6 +92,6 @@ async def request_json(
                 return response.json()
 
         await asyncio.sleep(delay + random.uniform(0, 0.3))
-        delay = min(delay * 2, 60.0)
+        delay = min(delay * 2, max_delay)
 
     raise ApiError(f"{method} {url} failed after {max_attempts} attempts: {last_error}")

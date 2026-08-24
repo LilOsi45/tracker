@@ -44,8 +44,15 @@ class PriceClient:
     def __init__(self, client: httpx.AsyncClient) -> None:
         self._client = client
 
-    async def spot_usd(self, mints: list[str]) -> dict[str, float]:
-        """Current USD price per mint. Mints Jupiter cannot route are omitted."""
+    async def spot_usd(
+        self, mints: list[str], *, attempts: int = 2, max_delay: float = 2.0
+    ) -> dict[str, float]:
+        """Current USD price per mint. Mints Jupiter cannot route are omitted.
+
+        Defaults are deliberately impatient: this sits on the request path of
+        a screen someone is staring at, and a missing price is a state the UI
+        renders honestly rather than an error worth waiting out.
+        """
         unique = list(dict.fromkeys(m for m in mints if m))
         prices: dict[str, float] = {}
 
@@ -58,6 +65,8 @@ class PriceClient:
                     JUPITER_PRICE_URL,
                     params={"ids": ",".join(chunk)},
                     limiter=_jupiter_limiter,
+                    max_attempts=attempts,
+                    max_delay=max_delay,
                 )
             except Exception as exc:  # a dead price feed must not kill the page
                 log.warning("Jupiter price lookup failed for %d mints: %s", len(chunk), exc)
