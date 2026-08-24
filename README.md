@@ -96,15 +96,23 @@ er wird ab Inbetriebnahme täglich gesnapshottet.
 ## Deployment (Hetzner)
 
 ```bash
+# Dienstkonto ohne Login und ohne Home
+useradd --system --no-create-home --shell /usr/sbin/nologin tracker
+
 git clone <repo> /opt/tracker && cd /opt/tracker
 python3 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements.txt
 cp .env.example .env && cp config.example.yaml config.yaml   # Key + Wallet eintragen
 install -o tracker -g tracker -d /opt/tracker/data
 
+# .env enthält Secrets und geht niemanden sonst etwas an
+chown tracker:tracker .env && chmod 600 .env
+
 cp deploy/tracker.service /etc/systemd/system/
-systemctl enable --now tracker
+systemctl daemon-reload && systemctl enable --now tracker
+systemctl status tracker --no-pager
 
 ln -s /opt/tracker/deploy/nginx.conf /etc/nginx/sites-enabled/tracker
+# server_name in der Config auf die eigene Domain setzen, dann:
 certbot --nginx -d tracker.example.de
 ```
 
