@@ -495,6 +495,48 @@ label.stack > span,
   text-align: center;
 }
 
+/* -------------------------- wallet view states -------------------------- */
+
+/* One state at a time. Before this, an unconfigured wallet screen showed
+   four section headings, a meaningless dash and the same sentence three
+   times over — the data layout standing empty instead of the screen saying
+   the one thing that was true. */
+
+.notice {
+  padding: 64px 0 0;
+  text-align: center;
+}
+
+.notice__text {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--dim);
+  white-space: pre-line;   /* the message carries its own line break */
+}
+
+.notice .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  text-decoration: none;
+}
+
+#view-wallet[data-state="ready"] .notice { display: none; }
+#view-wallet:not([data-state="ready"]) .wallet-live { display: none; }
+#view-wallet:not([data-state="ready"]) .footnote { display: none; }
+
+/* Without a wallet there is nothing to sync or export. */
+#view-wallet[data-state="empty"] .wallet-actions { display: none; }
+#view-wallet[data-state="unsynced"] .notice .btn { display: none; }
+
+/* Before the first sync there is nothing to export either, so Sync takes
+   the full width rather than sitting next to a button that would hand back
+   an empty file. */
+#view-wallet[data-state="unsynced"] #bExport { display: none; }
+#view-wallet[data-state="unsynced"] .wallet-actions { grid-template-columns: 1fr; }
+
 /* ------------------------------- buttons ------------------------------- */
 
 .actions {

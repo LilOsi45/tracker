@@ -96,37 +96,43 @@
     </section>
 
     <!-- ============================ WALLET =========================== -->
-    <section class="view" id="view-wallet" hidden>
+    <section class="view" id="view-wallet" data-state="empty" hidden>
 
-      <div class="hero" id="walletHero">
+      <!-- Shown instead of the data, never alongside it. -->
+      <div class="notice" id="walletNotice">
+        <p class="notice__text" id="walletNoticeText"></p>
+        <a class="btn" id="walletNoticeAction" href="#/setup">Zur Einrichtung</a>
+      </div>
+
+      <div class="hero wallet-live" id="walletHero">
         <p class="hero__label">Heute realisiert</p>
         <p class="hero__value" id="pnlToday">—</p>
         <p class="hero__sub" id="pnlTodayFiat"></p>
       </div>
 
-      <dl class="readout readout--split" id="walletStats">
+      <dl class="readout readout--split wallet-live" id="walletStats">
         <div><dt>Unrealisiert</dt><dd id="pnlUnreal">—</dd></div>
         <div><dt>Offene Positionen</dt><dd id="posCount">—</dd></div>
         <div><dt>Realisiert gesamt</dt><dd id="pnlLifetime">—</dd></div>
       </dl>
 
-      <div class="block">
+      <div class="block wallet-live">
         <p class="label">30 Tage <span id="chartNote"></span></p>
         <div id="chart" class="chart"></div>
       </div>
 
-      <div class="block">
+      <div class="block wallet-live">
         <p class="label">Offen <span id="posNote"></span></p>
         <div id="positions" class="list"></div>
       </div>
 
-      <div class="block">
+      <div class="block wallet-live">
         <p class="label">Historie <span id="tradesNote"></span></p>
         <div id="trades" class="list"></div>
         <button type="button" class="btn btn--ghost" id="moreTrades" hidden>Mehr laden</button>
       </div>
 
-      <div class="actions actions--two">
+      <div class="actions actions--two wallet-actions">
         <button type="button" class="btn" id="bSync">Sync</button>
         <button type="button" class="btn" id="bExport">CSV</button>
       </div>

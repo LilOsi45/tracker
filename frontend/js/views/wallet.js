@@ -161,15 +161,16 @@ async function loadTrades({ append = false } = {}) {
   els.tradesNote.textContent = data.total ? `${data.total} gesamt` : '';
 }
 
+function setState(state, message = '') {
+  els.view.dataset.state = state;
+  els.noticeText.textContent = message;
+}
+
 export async function loadWallet() {
   const address = wallet();
 
   if (!address) {
-    els.pnlToday.textContent = '—';
-    els.pnlToday.className = 'hero__value';
-    empty(els.positions, 'Keine Wallet hinterlegt.');
-    empty(els.trades, '');
-    els.footnote.textContent = 'Unter Setup eine Wallet-Adresse eintragen.';
+    setState('empty', 'Keine Wallet hinterlegt.');
     return;
   }
 
@@ -182,6 +183,15 @@ export async function loadWallet() {
       api.positions(address),
       api.chart(address, 30),
     ]);
+
+    // A never-synced wallet has no data, not zero data. Rendering the normal
+    // layout would show "+0.000 SOL" for today, which reads like a fact.
+    if (!summary.data.sync?.last_synced_at) {
+      setState('unsynced', 'Noch nicht synchronisiert.\nSync holt deine Trade-Historie.');
+      return;
+    }
+
+    setState('ready');
 
     // Set before rendering the summary: the footnote reports on the chart.
     hasUnrealizedHistory = chart.data.has_unrealized_history;
@@ -208,6 +218,8 @@ export async function loadWallet() {
 
 export function initWallet() {
   els = {
+    view: document.getElementById('view-wallet'),
+    noticeText: document.getElementById('walletNoticeText'),
     pnlToday: document.getElementById('pnlToday'),
     pnlTodayFiat: document.getElementById('pnlTodayFiat'),
     pnlUnreal: document.getElementById('pnlUnreal'),
