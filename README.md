@@ -95,11 +95,25 @@ er wird ab Inbetriebnahme täglich gesnapshottet.
 
 ## Deployment (Hetzner)
 
-Auf einer frischen Debian- oder Ubuntu-Kiste als root:
+Auf einer frischen Debian- oder Ubuntu-Kiste als root. Das Repo ist privat,
+also braucht sowohl das Holen des Skripts als auch der Klon ein GitHub-Token
+mit Lesezugriff (fein granuliert, nur dieses Repo, *Contents: Read-only*):
+
+```bash
+export GH_TOKEN=github_pat_...
+curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+  https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh \
+  | GH_TOKEN=$GH_TOKEN bash
+```
+
+Ist das Repo öffentlich, entfallen Header und `GH_TOKEN`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
 ```
+
+Das Token wird nur für die Übertragung selbst benutzt und landet nicht in
+`.git/config` — dafür braucht ein späterer erneuter Aufruf es wieder.
 
 Das Skript fragt Domain, Helius-Key und Wallet ab, erzeugt den Access-Token
 selbst und richtet Dienst, nginx und Zertifikat ein. Am Ende druckt es einen

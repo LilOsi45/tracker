@@ -2,12 +2,20 @@
 #
 # One-shot installer for a fresh Debian/Ubuntu box.
 #
-# Written to be driven from a phone over SSH: it asks three short questions,
-# generates the access token itself, and prints a tap-to-configure link at
-# the end so nothing long has to be typed on a touch keyboard.
+# Written to be driven from a phone over SSH: it asks a handful of short
+# questions, generates the access token itself, and prints a tap-to-configure
+# link at the end so nothing long has to be typed on a touch keyboard.
+#
+# The repository is private, so both fetching this script and cloning need a
+# GitHub token with read access to it:
 #
 #   ssh root@<server-ip>
-#   curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
+#   export GH_TOKEN=github_pat_...
+#   curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+#     https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh \
+#     | GH_TOKEN=$GH_TOKEN bash
+#
+# If the repository is public, drop the header and GH_TOKEN entirely.
 #
 # Re-running it is safe: it updates the checkout and keeps the existing
 # .env, so your token and keys survive.
@@ -149,13 +157,24 @@ bold "Anwendung"
 id -u "$APP_USER" >/dev/null 2>&1 || \
   useradd --system --no-create-home --shell /usr/sbin/nologin "$APP_USER"
 
+# The token is only ever used for the transfer itself. It is never written
+# into .git/config, so it does not sit on the server afterwards — the cost is
+# that a later re-run needs GH_TOKEN again.
+AUTH_URL="$REPO_URL"
+if [[ -n ${GH_TOKEN:-} ]]; then
+  AUTH_URL="https://x-access-token:${GH_TOKEN}@${REPO_URL#https://}"
+fi
+
 if [[ -d $APP_DIR/.git ]]; then
-  git -C "$APP_DIR" fetch --quiet origin "$REPO_BRANCH"
-  git -C "$APP_DIR" checkout --quiet "$REPO_BRANCH"
-  git -C "$APP_DIR" reset --hard --quiet "origin/$REPO_BRANCH"
+  git -C "$APP_DIR" fetch --quiet "$AUTH_URL" "$REPO_BRANCH" \
+    || die "Abruf fehlgeschlagen. Bei einem privaten Repo GH_TOKEN setzen."
+  git -C "$APP_DIR" checkout --quiet -B "$REPO_BRANCH" FETCH_HEAD
   info "Checkout aktualisiert"
 else
-  git clone --quiet --branch "$REPO_BRANCH" "$REPO_URL" "$APP_DIR"
+  git clone --quiet --branch "$REPO_BRANCH" "$AUTH_URL" "$APP_DIR" \
+    || die "Klonen fehlgeschlagen. Ist das Repo privat? Dann GH_TOKEN setzen."
+  # Strip the credential back out of the stored remote.
+  git -C "$APP_DIR" remote set-url origin "$REPO_URL"
   info "Repository geklont"
 fi
 
