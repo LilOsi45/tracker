@@ -60,18 +60,36 @@ async function writeCache(url, data) {
   }
 }
 
+/* Raw backend errors are developer language. "Unauthorized" tells you
+   nothing about what to do; a missing token and a wrong one look identical
+   on screen and both are fixed in the same place. */
+async function describe(response) {
+  if (response.status === 401 || response.status === 403) {
+    return getSettings().token
+      ? 'Token stimmt nicht — unter Setup prüfen.'
+      : 'Kein Token hinterlegt — unter Setup eintragen.';
+  }
+  if (response.status === 404) return 'Endpunkt nicht gefunden.';
+  const detail = await response.text().catch(() => '');
+  return detail.slice(0, 200) || response.statusText || `Fehler ${response.status}`;
+}
+
 async function get(path, { signal } = {}) {
   const url = `${base()}${path}`;
   try {
     const response = await fetch(url, { headers: headers(), signal });
     if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      throw new ApiError(detail.slice(0, 200) || response.statusText, response.status);
+      throw new ApiError(await describe(response), response.status);
     }
     const data = await response.json();
     await writeCache(url, data);
     return { data, stale: false, cachedAt: Date.now() };
   } catch (error) {
+    // An auth failure must never be papered over with cached data: the whole
+    // point is that you find out the token is wrong.
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      throw error;
+    }
     const cached = await readCache(url);
     if (cached) return cached;
     if (error instanceof ApiError) throw error;
@@ -82,8 +100,7 @@ async function get(path, { signal } = {}) {
 async function post(path) {
   const response = await fetch(`${base()}${path}`, { method: 'POST', headers: headers() });
   if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    throw new ApiError(detail.slice(0, 200) || response.statusText, response.status);
+    throw new ApiError(await describe(response), response.status);
   }
   return response.json();
 }

@@ -185,10 +185,14 @@
         </label>
         <label class="stack">
           <span>Access-Token</span>
-          <input class="field" type="password" id="cfgToken" placeholder="leer lassen wenn nicht gesetzt"
-                 autocomplete="off">
+          <!-- Readable on purpose: this is your own phone, and a masked field
+               makes a mis-paste impossible to spot. -->
+          <input class="field field--ca" type="text" id="cfgToken" placeholder="aus der .env auf dem Server"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off">
         </label>
-        <p class="hint">Leer = gleiche Herkunft wie diese Seite.</p>
+        <p class="hint">API-URL leer lassen = gleiche Herkunft wie diese Seite.
+          Den Token findest du auf dem Server mit
+          <code>grep ACCESS_TOKEN /opt/tracker/.env</code>.</p>
       </div>
 
       <div class="block">

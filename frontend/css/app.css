@@ -126,6 +126,13 @@ body {
   color: var(--faint);
 }
 
+.hint code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  word-break: break-all;
+}
+
 .footnote {
   margin: 28px 0 0;
   font-size: 11px;
