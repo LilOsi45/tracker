@@ -56,6 +56,37 @@ HELIUS_KEY="$(ask 'Helius API-Key (leer lassen geht, dann kein Wallet-Sync)')"
 WALLET="$(ask 'Solana-Wallet-Adresse (optional)')"
 EMAIL="$(ask "E-Mail für Let's-Encrypt-Ablaufwarnungen" "admin@${DOMAIN#*.}")"
 
+# --- port selection -------------------------------------------------------
+# This box may already run something on 8000. Binding there anyway would
+# leave the tracker dead with "address already in use", so take the first
+# free port instead — and on a re-run keep whatever the unit already uses,
+# since the running tracker occupies its own port.
+# Tested by actually binding, not by parsing `ss` output: if ss were missing
+# its error would be swallowed and every port would look free, which is the
+# exact failure this function exists to prevent.
+pick_port() {
+  python3 - <<'PY'
+import socket
+
+for port in range(8000, 8100):
+    with socket.socket() as probe:
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            probe.bind(("127.0.0.1", port))
+        except OSError:
+            continue
+    print(port)
+    break
+else:
+    raise SystemExit("kein freier Port zwischen 8000 und 8099")
+PY
+}
+
+PORT=""
+if [[ -f /etc/systemd/system/tracker.service ]]; then
+  PORT="$(grep -oP -- '(?<=--port )\d+' /etc/systemd/system/tracker.service || true)"
+fi
+
 bold ""
 info "Domain:  $DOMAIN"
 info "Helius:  $([[ -n $HELIUS_KEY ]] && echo 'gesetzt' || echo 'fehlt — Coin-Übersicht läuft, Wallet-Sync nicht')"
@@ -84,8 +115,17 @@ bold "Pakete"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq git python3 python3-venv python3-pip nginx certbot \
-  python3-certbot-nginx curl ca-certificates >/dev/null
+  python3-certbot-nginx curl ca-certificates iproute2 openssl >/dev/null
 info "installiert"
+
+# ss is available now, so a free port can be chosen.
+if [[ -n $PORT ]]; then
+  info "Port $PORT aus bestehender Installation übernommen"
+else
+  PORT="$(pick_port)"
+  [[ $PORT == 8000 ]] && info "Port $PORT" \
+    || warn "Port 8000 ist belegt, Tracker läuft auf $PORT"
+fi
 
 # --- user and checkout ----------------------------------------------------
 bold ""
@@ -147,7 +187,7 @@ chown "$APP_USER:$APP_USER" config.yaml
 # --- service --------------------------------------------------------------
 bold ""
 bold "Dienst"
-cp deploy/tracker.service /etc/systemd/system/tracker.service
+sed "s/--port 8000/--port $PORT/" deploy/tracker.service > /etc/systemd/system/tracker.service
 systemctl daemon-reload
 systemctl enable --quiet --now tracker
 sleep 2
@@ -162,9 +202,18 @@ fi
 # --- nginx ----------------------------------------------------------------
 bold ""
 bold "Webserver"
-sed "s/tracker\.example\.de/$DOMAIN/g" deploy/nginx.conf > /etc/nginx/sites-available/tracker
+sed -e "s/tracker\.example\.de/$DOMAIN/g" \
+    -e "s|127\.0\.0\.1:8000|127.0.0.1:$PORT|g" \
+    deploy/nginx.conf > /etc/nginx/sites-available/tracker
 ln -sf /etc/nginx/sites-available/tracker /etc/nginx/sites-enabled/tracker
-rm -f /etc/nginx/sites-enabled/default
+
+# Only drop the stock placeholder site, never a config someone else put here.
+if [[ -L /etc/nginx/sites-enabled/default ]] && \
+   [[ "$(readlink -f /etc/nginx/sites-enabled/default)" == /etc/nginx/sites-available/default ]] && \
+   ! grep -q 'proxy_pass' /etc/nginx/sites-available/default 2>/dev/null; then
+  rm -f /etc/nginx/sites-enabled/default
+  info "nginx-Standardseite deaktiviert"
+fi
 
 nginx -t >/dev/null 2>&1 || { nginx -t; die "nginx-Konfiguration fehlerhaft."; }
 systemctl reload nginx
