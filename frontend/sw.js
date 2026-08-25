@@ -11,7 +11,9 @@
      that impossible.
 */
 
-const VERSION = 'v1';
+// Bumping this drops the previous caches in `activate`. Needed once here to
+// clear the stale shell left behind by the old cache-first worker.
+const VERSION = 'v2';
 const SHELL = `tracker-shell-${VERSION}`;
 const FONTS = `tracker-fonts-${VERSION}`;
 
@@ -92,24 +94,36 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== self.location.origin) return;
 
+  // Stale-while-revalidate. Plain cache-first opened instantly but pinned the
+  // app to whatever was cached first: a deployed fix never reached an
+  // installed PWA, because nothing ever asked the network again. Now the
+  // cached copy is served immediately and refreshed in the background, so the
+  // next launch runs the new version — and offline still works.
   event.respondWith(
-    caches.match(request).then(async (hit) => {
+    (async () => {
+      const cache = await caches.open(SHELL);
+      const hit = await cache.match(request);
+
+      const refresh = fetch(request)
+        .then((response) => {
+          if (response.ok && response.type === 'basic') {
+            cache.put(request, response.clone());
+          }
+          return response;
+        })
+        .catch(() => null);
+
       if (hit) return hit;
-      try {
-        const response = await fetch(request);
-        if (response.ok && response.type === 'basic') {
-          const cache = await caches.open(SHELL);
-          cache.put(request, response.clone());
-        }
-        return response;
-      } catch {
-        // A navigation that misses the cache still has to land somewhere.
-        if (request.mode === 'navigate') {
-          const shell = await caches.match('./index.html');
-          if (shell) return shell;
-        }
-        return new Response('', { status: 504 });
+
+      const response = await refresh;
+      if (response) return response;
+
+      // A navigation that misses the cache still has to land somewhere.
+      if (request.mode === 'navigate') {
+        const shell = await cache.match('./index.html');
+        if (shell) return shell;
       }
-    }),
+      return new Response('', { status: 504 });
+    })(),
   );
 });

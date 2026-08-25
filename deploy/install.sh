@@ -252,7 +252,11 @@ bold ""
 bold "Dienst"
 sed "s/--port 8000/--port $PORT/" deploy/tracker.service > /etc/systemd/system/tracker.service
 systemctl daemon-reload
-systemctl enable --quiet --now tracker
+systemctl enable --quiet tracker
+# restart, not `enable --now`: that leaves an already-running service alone,
+# so on a re-run the process would keep the .env and the code it started with
+# and every update would silently have no effect.
+systemctl restart tracker
 sleep 2
 
 if systemctl is-active --quiet tracker; then
