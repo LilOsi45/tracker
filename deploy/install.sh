@@ -29,6 +29,21 @@ die() { printf '\033[31m  x %s\033[0m\n' "$*" >&2; exit 1; }
 [[ $EUID -eq 0 ]] || die "Bitte als root ausführen (sudo -i)."
 command -v apt-get >/dev/null || die "Erwartet Debian oder Ubuntu."
 
+# The pinned dependencies ship wheels up to cp313. On a newer interpreter pip
+# falls back to building from source, which needs Rust for pydantic-core and a
+# C toolchain for uvloop/httptools/watchfiles — neither of which this script
+# installs. Better to stop here than to leave a half-built venv behind.
+if command -v python3 >/dev/null; then
+  PY_MINOR="$(python3 -c 'import sys; print(sys.version_info[1])')"
+  if (( PY_MINOR > 13 )); then
+    die "Python 3.$PY_MINOR gefunden, unterstützt sind 3.9 bis 3.13.
+     Bitte den Server mit Ubuntu 24.04 LTS neu aufsetzen (bringt Python 3.12 mit)."
+  fi
+  if (( PY_MINOR < 9 )); then
+    die "Python 3.$PY_MINOR ist zu alt. Ubuntu 24.04 LTS verwenden."
+  fi
+fi
+
 # Prompts must read from the terminal, not from the piped script body.
 if [[ -t 0 ]]; then TTY=/dev/stdin; else TTY=/dev/tty; fi
 [[ -r $TTY ]] || die "Keine Eingabe möglich. Skript herunterladen und direkt ausführen."
