@@ -54,17 +54,27 @@ fi
 
 # Prompts must read from the terminal, not from the piped script body.
 if [[ -t 0 ]]; then TTY=/dev/stdin; else TTY=/dev/tty; fi
-[[ -r $TTY ]] || die "Keine Eingabe möglich. Skript herunterladen und direkt ausführen."
+
+# Strip surrounding whitespace and any carriage return. A value pasted from a
+# phone regularly carries a trailing space or a CR, and an API key with an
+# invisible \r appended fails later as a 401 that looks like a wrong key.
+trim() {
+  local s="${1//$'\r'/}"
+  s="${s#"${s%%[![:space:]]*}"}"
+  printf '%s' "${s%"${s##*[![:space:]]}"}"
+}
 
 ask() {
-  local prompt="$1" default="${2:-}" answer
-  if [[ -n $default ]]; then
-    read -r -p "  $prompt [$default]: " answer <"$TTY" || true
-    printf '%s' "${answer:-$default}"
-  else
-    read -r -p "  $prompt: " answer <"$TTY" || true
-    printf '%s' "$answer"
+  local prompt="$1" default="${2:-}" answer=""
+  if [[ -r $TTY ]]; then
+    if [[ -n $default ]]; then
+      read -r -p "  $prompt [$default]: " answer <"$TTY" || true
+    else
+      read -r -p "  $prompt: " answer <"$TTY" || true
+    fi
   fi
+  answer="$(trim "$answer")"
+  printf '%s' "${answer:-$default}"
 }
 
 # --------------------------------------------------------------------------
@@ -72,12 +82,22 @@ bold ""
 bold "Tracker — Installation"
 bold ""
 
-DOMAIN="$(ask 'Domain (z.B. tracker.deine-domain.de)')"
-[[ -n $DOMAIN ]] || die "Ohne Domain kein Zertifikat und keine installierbare App."
+# Every answer can be supplied as an environment variable instead. On a phone
+# that matters: one pasted line beats four prompts where a paste without a
+# trailing Return looks exactly like a hung script.
+DOMAIN="$(trim "${DOMAIN:-}")"
+[[ -n $DOMAIN ]] || DOMAIN="$(ask 'Domain (z.B. tracker.deine-domain.de)')"
+[[ -n $DOMAIN ]] || die "Ohne Domain kein Zertifikat und keine installierbare App.
+     Alternativ vorab setzen:  export DOMAIN=tracker.deine-domain.de"
 
-HELIUS_KEY="$(ask 'Helius API-Key (leer lassen geht, dann kein Wallet-Sync)')"
-WALLET="$(ask 'Solana-Wallet-Adresse (optional)')"
-EMAIL="$(ask "E-Mail für Let's-Encrypt-Ablaufwarnungen" "admin@${DOMAIN#*.}")"
+HELIUS_KEY="$(trim "${HELIUS_KEY:-}")"
+[[ -n $HELIUS_KEY ]] || HELIUS_KEY="$(ask 'Helius API-Key (leer lassen geht, dann kein Wallet-Sync)')"
+
+WALLET="$(trim "${WALLET:-}")"
+[[ -n $WALLET ]] || WALLET="$(ask 'Solana-Wallet-Adresse (optional)')"
+
+EMAIL="$(trim "${EMAIL:-}")"
+[[ -n $EMAIL ]] || EMAIL="$(ask "E-Mail für Let's-Encrypt-Ablaufwarnungen" "admin@${DOMAIN#*.}")"
 
 # --- port selection -------------------------------------------------------
 # This box may already run something on 8000. Binding there anyway would
@@ -112,7 +132,13 @@ fi
 
 bold ""
 info "Domain:  $DOMAIN"
-info "Helius:  $([[ -n $HELIUS_KEY ]] && echo 'gesetzt' || echo 'fehlt — Coin-Übersicht läuft, Wallet-Sync nicht')"
+# Length and first characters, so a truncated or half-pasted key is visible
+# here rather than showing up later as an unexplained 401.
+if [[ -n $HELIUS_KEY ]]; then
+  info "Helius:  ${HELIUS_KEY:0:4}… (${#HELIUS_KEY} Zeichen)"
+else
+  info "Helius:  fehlt — Coin-Übersicht läuft, Wallet-Sync nicht"
+fi
 info "Wallet:  ${WALLET:-nicht gesetzt}"
 bold ""
 
@@ -135,6 +161,9 @@ fi
 # --- packages -------------------------------------------------------------
 bold ""
 bold "Pakete"
+# These two commands are silent for up to two minutes. Say so, otherwise the
+# quiet stretch is indistinguishable from a hang.
+info "wird geladen, das dauert ein bis zwei Minuten ohne Ausgabe …"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq git python3 python3-venv python3-pip nginx certbot \

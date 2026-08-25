@@ -112,6 +112,18 @@ Ist das Repo öffentlich, entfallen Header und `GH_TOKEN`:
 curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
 ```
 
+Statt der Abfragen lassen sich alle Antworten vorab setzen — auf einem Handy
+angenehmer, weil ein eingefügter Wert ohne abschließendes Return sonst wie
+ein hängendes Skript aussieht:
+
+```bash
+export DOMAIN=tracker.deine-domain.de
+export HELIUS_KEY=...
+export WALLET=...
+export EMAIL=du@example.de
+curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
+```
+
 Das Token wird nur für die Übertragung selbst benutzt und landet nicht in
 `.git/config` — dafür braucht ein späterer erneuter Aufruf es wieder.
 
