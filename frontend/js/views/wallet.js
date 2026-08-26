@@ -46,6 +46,14 @@ function renderSummary(summary, stale) {
   }
   els.pnlTodayFiat.textContent = parts.join('  ·  ');
 
+  // null means the balance could not be read, which is not the same as an
+  // empty wallet — show a dash, never a zero.
+  const balance = summary.sol_balance;
+  els.solBalance.textContent = balance === null || balance === undefined
+    ? '—'
+    : solPlain(balance);
+  els.solBalance.title = summary.sol_balance_usd ? eur(summary.sol_balance_usd) : '';
+
   const unreal = summary.unrealized_sol;
   els.pnlUnreal.textContent = sol(unreal);
   els.pnlUnreal.className = direction(unreal);
@@ -222,6 +230,7 @@ export function initWallet() {
     noticeText: document.getElementById('walletNoticeText'),
     pnlToday: document.getElementById('pnlToday'),
     pnlTodayFiat: document.getElementById('pnlTodayFiat'),
+    solBalance: document.getElementById('solBalance'),
     pnlUnreal: document.getElementById('pnlUnreal'),
     posCount: document.getElementById('posCount'),
     pnlLifetime: document.getElementById('pnlLifetime'),

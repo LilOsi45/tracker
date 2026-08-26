@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from ..clients.dexscreener import DexScreenerClient
+from ..clients.helius import HeliusClient
 from ..clients.prices import PriceClient
 from ..config import WSOL_MINT, load_yaml_config
 from ..db import session
@@ -55,6 +56,10 @@ def _meta_map(conn, mints: list[str]) -> dict[str, dict[str, Any]]:
 # a dead upstream is worse than a screen that says "kein Preis".
 PRICE_BUDGET_SECONDS = 8.0
 
+# The balance is one RPC call; if it has not answered by now it will not
+# rescue the screen either.
+BALANCE_BUDGET_SECONDS = 5.0
+
 
 async def _fetch_prices(
     http: httpx.AsyncClient, mints: list[str]
@@ -93,6 +98,22 @@ async def _current_prices(
     except asyncio.TimeoutError:
         log.warning("price lookup exceeded %.0fs, rendering without prices", PRICE_BUDGET_SECONDS)
         return {}, None
+
+
+async def _sol_balance(http: httpx.AsyncClient, wallet: str) -> float | None:
+    """Live SOL balance, or None when it cannot be read.
+
+    None and 0.0 mean different things here — "unknown" versus "empty wallet" —
+    so a failure must not collapse into a zero on screen.
+    """
+    client = HeliusClient(http)
+    if not client.configured:
+        return None
+    try:
+        return await asyncio.wait_for(client.sol_balance(wallet), BALANCE_BUDGET_SECONDS)
+    except Exception as exc:
+        log.warning("SOL balance lookup failed for %s: %s", wallet, exc)
+        return None
 
 
 async def open_positions(http: httpx.AsyncClient, wallet: str) -> dict[str, Any]:
@@ -200,6 +221,7 @@ async def summary(http: httpx.AsyncClient, wallet: str) -> dict[str, Any]:
 
     holdings = await open_positions(http, wallet)
     sol_usd = holdings["sol_usd"]
+    sol_balance = await _sol_balance(http, wallet)
 
     return {
         "wallet": wallet,
@@ -212,6 +234,14 @@ async def summary(http: httpx.AsyncClient, wallet: str) -> dict[str, Any]:
         "open_value_sol": holdings["totals"]["value_sol"],
         "open_positions": len(holdings["positions"]),
         "realized_lifetime_sol": lifetime["pnl_sol"],
+        # Liquid SOL sitting in the wallet. Read live from the chain, not
+        # derived from the ledger: transfers in and out are not trades, so the
+        # swap history cannot tell you this.
+        "sol_balance": sol_balance,
+        "sol_balance_usd": sol_balance * sol_usd if sol_balance is not None and sol_usd else None,
+        "total_value_sol": (sol_balance or 0) + (holdings["totals"]["value_sol"] or 0)
+        if sol_balance is not None
+        else None,
         "sync": {
             "last_synced_at": state["last_synced_at"] if state else None,
             "backfill_complete": bool(state["backfill_complete"]) if state else False,
