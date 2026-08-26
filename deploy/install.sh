@@ -6,7 +6,7 @@
 # questions, generates the access token itself, and prints a tap-to-configure
 # link at the end so nothing long has to be typed on a touch keyboard.
 #
-# The repository is private, so both fetching this script and cloning need a
+# If the repository is private, fetching this script and cloning both need a
 # GitHub token with read access to it:
 #
 #   ssh root@<server-ip>
@@ -34,8 +34,8 @@ info() { printf '  %s\n' "$*"; }
 warn() { printf '\033[33m  ! %s\033[0m\n' "$*"; }
 die() { printf '\033[31m  x %s\033[0m\n' "$*" >&2; exit 1; }
 
-[[ $EUID -eq 0 ]] || die "Bitte als root ausführen (sudo -i)."
-command -v apt-get >/dev/null || die "Erwartet Debian oder Ubuntu."
+[[ $EUID -eq 0 ]] || die "Run this as root (sudo -i)."
+command -v apt-get >/dev/null || die "Expects Debian or Ubuntu."
 
 # The pinned dependencies ship wheels up to cp313. On a newer interpreter pip
 # falls back to building from source, which needs Rust for pydantic-core and a
@@ -44,11 +44,11 @@ command -v apt-get >/dev/null || die "Erwartet Debian oder Ubuntu."
 if command -v python3 >/dev/null; then
   PY_MINOR="$(python3 -c 'import sys; print(sys.version_info[1])')"
   if (( PY_MINOR > 13 )); then
-    die "Python 3.$PY_MINOR gefunden, unterstützt sind 3.9 bis 3.13.
-     Bitte den Server mit Ubuntu 24.04 LTS neu aufsetzen (bringt Python 3.12 mit)."
+    die "Found Python 3.$PY_MINOR, supported is 3.9 to 3.13.
+     Rebuild the server with Ubuntu 24.04 LTS, which ships Python 3.12."
   fi
   if (( PY_MINOR < 9 )); then
-    die "Python 3.$PY_MINOR ist zu alt. Ubuntu 24.04 LTS verwenden."
+    die "Python 3.$PY_MINOR is too old. Use Ubuntu 24.04 LTS."
   fi
 fi
 
@@ -79,25 +79,25 @@ ask() {
 
 # --------------------------------------------------------------------------
 bold ""
-bold "Tracker — Installation"
+bold "Tracker — install"
 bold ""
 
 # Every answer can be supplied as an environment variable instead. On a phone
 # that matters: one pasted line beats four prompts where a paste without a
 # trailing Return looks exactly like a hung script.
 DOMAIN="$(trim "${DOMAIN:-}")"
-[[ -n $DOMAIN ]] || DOMAIN="$(ask 'Domain (z.B. tracker.deine-domain.de)')"
-[[ -n $DOMAIN ]] || die "Ohne Domain kein Zertifikat und keine installierbare App.
-     Alternativ vorab setzen:  export DOMAIN=tracker.deine-domain.de"
+[[ -n $DOMAIN ]] || DOMAIN="$(ask 'Domain (e.g. tracker.your-domain.com)')"
+[[ -n $DOMAIN ]] || die "No domain means no certificate and no installable app.
+     Or set it beforehand:  export DOMAIN=tracker.your-domain.com"
 
 HELIUS_KEY="$(trim "${HELIUS_KEY:-}")"
-[[ -n $HELIUS_KEY ]] || HELIUS_KEY="$(ask 'Helius API-Key (leer lassen geht, dann kein Wallet-Sync)')"
+[[ -n $HELIUS_KEY ]] || HELIUS_KEY="$(ask 'Helius API key (may be left empty, then no wallet sync)')"
 
 WALLET="$(trim "${WALLET:-}")"
-[[ -n $WALLET ]] || WALLET="$(ask 'Solana-Wallet-Adresse (optional)')"
+[[ -n $WALLET ]] || WALLET="$(ask 'Solana wallet address (optional)')"
 
 EMAIL="$(trim "${EMAIL:-}")"
-[[ -n $EMAIL ]] || EMAIL="$(ask "E-Mail für Let's-Encrypt-Ablaufwarnungen" "admin@${DOMAIN#*.}")"
+[[ -n $EMAIL ]] || EMAIL="$(ask "Email for Let's Encrypt expiry notices" "admin@${DOMAIN#*.}")"
 
 # --- port selection -------------------------------------------------------
 # This box may already run something on 8000. Binding there anyway would
@@ -121,7 +121,7 @@ for port in range(8000, 8100):
     print(port)
     break
 else:
-    raise SystemExit("kein freier Port zwischen 8000 und 8099")
+    raise SystemExit("no free port between 8000 and 8099")
 PY
 }
 
@@ -135,11 +135,11 @@ info "Domain:  $DOMAIN"
 # Length and first characters, so a truncated or half-pasted key is visible
 # here rather than showing up later as an unexplained 401.
 if [[ -n $HELIUS_KEY ]]; then
-  info "Helius:  ${HELIUS_KEY:0:4}… (${#HELIUS_KEY} Zeichen)"
+  info "Helius:  ${HELIUS_KEY:0:4}… (${#HELIUS_KEY} chars)"
 else
-  info "Helius:  fehlt — Coin-Übersicht läuft, Wallet-Sync nicht"
+  info "Helius:  missing — coin list works, wallet sync does not"
 fi
-info "Wallet:  ${WALLET:-nicht gesetzt}"
+info "Wallet:  ${WALLET:-not set}"
 bold ""
 
 # --- DNS sanity check -----------------------------------------------------
@@ -149,39 +149,39 @@ PUBLIC_IP="$(curl -fsS --max-time 10 https://api.ipify.org 2>/dev/null || true)"
 RESOLVED="$(getent ahostsv4 "$DOMAIN" 2>/dev/null | awk 'NR==1{print $1}' || true)"
 
 if [[ -z $RESOLVED ]]; then
-  warn "$DOMAIN löst nicht auf. A-Record anlegen, dann dieses Skript erneut starten."
-  warn "Bis dahin bricht die Zertifikatsausstellung ab."
+  warn "$DOMAIN does not resolve. Add the A record, then run this script again."
+  warn "Until then the certificate step will fail."
 elif [[ -n $PUBLIC_IP && $RESOLVED != "$PUBLIC_IP" ]]; then
-  warn "$DOMAIN zeigt auf $RESOLVED, dieser Server ist $PUBLIC_IP."
-  warn "Solange das so ist, schlägt certbot fehl."
+  warn "$DOMAIN points at $RESOLVED, this server is $PUBLIC_IP."
+  warn "certbot will fail while that is the case."
 else
-  info "DNS zeigt korrekt hierher ($RESOLVED)."
+  info "DNS points here correctly ($RESOLVED)."
 fi
 
 # --- packages -------------------------------------------------------------
 bold ""
-bold "Pakete"
+bold "Packages"
 # These two commands are silent for up to two minutes. Say so, otherwise the
 # quiet stretch is indistinguishable from a hang.
-info "wird geladen, das dauert ein bis zwei Minuten ohne Ausgabe …"
+info "downloading, this takes one to two minutes with no output …"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq git python3 python3-venv python3-pip nginx certbot \
   python3-certbot-nginx curl ca-certificates iproute2 openssl >/dev/null
-info "installiert"
+info "installed"
 
 # ss is available now, so a free port can be chosen.
 if [[ -n $PORT ]]; then
-  info "Port $PORT aus bestehender Installation übernommen"
+  info "Reusing port $PORT from the existing installation"
 else
   PORT="$(pick_port)"
   [[ $PORT == 8000 ]] && info "Port $PORT" \
-    || warn "Port 8000 ist belegt, Tracker läuft auf $PORT"
+    || warn "Port 8000 is taken, tracker runs on $PORT"
 fi
 
 # --- user and checkout ----------------------------------------------------
 bold ""
-bold "Anwendung"
+bold "Application"
 
 id -u "$APP_USER" >/dev/null 2>&1 || \
   useradd --system --no-create-home --shell /usr/sbin/nologin "$APP_USER"
@@ -196,22 +196,22 @@ fi
 
 if [[ -d $APP_DIR/.git ]]; then
   git -C "$APP_DIR" fetch --quiet "$AUTH_URL" "$REPO_BRANCH" \
-    || die "Abruf fehlgeschlagen. Bei einem privaten Repo GH_TOKEN setzen."
+    || die "Fetch failed. Set GH_TOKEN if the repository is private."
   git -C "$APP_DIR" checkout --quiet -B "$REPO_BRANCH" FETCH_HEAD
-  info "Checkout aktualisiert"
+  info "Checkout updated"
 else
   git clone --quiet --branch "$REPO_BRANCH" "$AUTH_URL" "$APP_DIR" \
-    || die "Klonen fehlgeschlagen. Ist das Repo privat? Dann GH_TOKEN setzen."
+    || die "Clone failed. Is the repository private? Then set GH_TOKEN."
   # Strip the credential back out of the stored remote.
   git -C "$APP_DIR" remote set-url origin "$REPO_URL"
-  info "Repository geklont"
+  info "Repository cloned"
 fi
 
 cd "$APP_DIR"
 python3 -m venv backend/.venv
 backend/.venv/bin/pip install --quiet --upgrade pip
 backend/.venv/bin/pip install --quiet -r backend/requirements.txt
-info "Abhängigkeiten installiert"
+info "Dependencies installed"
 
 install -o "$APP_USER" -g "$APP_USER" -d "$APP_DIR/data"
 
@@ -219,10 +219,10 @@ install -o "$APP_USER" -g "$APP_USER" -d "$APP_DIR/data"
 # An existing token is reused so a re-run does not lock the phone out.
 if [[ -f .env ]] && grep -q '^ACCESS_TOKEN=.\+' .env; then
   ACCESS_TOKEN="$(grep '^ACCESS_TOKEN=' .env | cut -d= -f2-)"
-  info "Bestehender Access-Token übernommen"
+  info "Reusing the existing access token"
 else
   ACCESS_TOKEN="$(openssl rand -hex 24)"
-  info "Access-Token erzeugt"
+  info "Access token generated"
 fi
 
 cat > .env <<EOF
@@ -241,15 +241,15 @@ if [[ ! -f config.yaml ]]; then
     # Turn the empty `wallets: []` into a one-entry list.
     sed -i "s|^  wallets: \[\]|  wallets:\n    - $WALLET|" config.yaml
   fi
-  info "config.yaml angelegt"
+  info "config.yaml created"
 else
-  info "config.yaml existiert, unverändert gelassen"
+  info "config.yaml exists, left untouched"
 fi
 chown "$APP_USER:$APP_USER" config.yaml
 
 # --- service --------------------------------------------------------------
 bold ""
-bold "Dienst"
+bold "Service"
 sed "s/--port 8000/--port $PORT/" deploy/tracker.service > /etc/systemd/system/tracker.service
 systemctl daemon-reload
 systemctl enable --quiet tracker
@@ -260,15 +260,15 @@ systemctl restart tracker
 sleep 2
 
 if systemctl is-active --quiet tracker; then
-  info "tracker läuft"
+  info "tracker is running"
 else
   journalctl -u tracker -n 30 --no-pager || true
-  die "tracker startet nicht — Log oben."
+  die "tracker does not start — log above."
 fi
 
 # --- nginx ----------------------------------------------------------------
 bold ""
-bold "Webserver"
+bold "Web server"
 sed -e "s/tracker\.example\.de/$DOMAIN/g" \
     -e "s|127\.0\.0\.1:8000|127.0.0.1:$PORT|g" \
     deploy/nginx.conf > /etc/nginx/sites-available/tracker
@@ -279,23 +279,23 @@ if [[ -L /etc/nginx/sites-enabled/default ]] && \
    [[ "$(readlink -f /etc/nginx/sites-enabled/default)" == /etc/nginx/sites-available/default ]] && \
    ! grep -q 'proxy_pass' /etc/nginx/sites-available/default 2>/dev/null; then
   rm -f /etc/nginx/sites-enabled/default
-  info "nginx-Standardseite deaktiviert"
+  info "nginx default site disabled"
 fi
 
-nginx -t >/dev/null 2>&1 || { nginx -t; die "nginx-Konfiguration fehlerhaft."; }
+nginx -t >/dev/null 2>&1 || { nginx -t; die "nginx configuration is invalid."; }
 systemctl reload nginx
-info "nginx konfiguriert"
+info "nginx configured"
 
 # --- TLS ------------------------------------------------------------------
 bold ""
-bold "Zertifikat"
+bold "Certificate"
 if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
      --email "$EMAIL" --redirect >/dev/null 2>&1; then
-  info "Zertifikat ausgestellt, HTTPS aktiv"
+  info "Certificate issued, HTTPS active"
   TLS_OK=1
 else
-  warn "certbot fehlgeschlagen — meist zeigt der DNS-Eintrag noch nicht hierher."
-  warn "A-Record prüfen, dann erneut:  certbot --nginx -d $DOMAIN --redirect"
+  warn "certbot failed — usually the DNS record does not point here yet."
+  warn "Check the A record, then retry:  certbot --nginx -d $DOMAIN --redirect"
   TLS_OK=0
 fi
 
@@ -303,18 +303,18 @@ fi
 SCHEME=$([[ ${TLS_OK:-0} -eq 1 ]] && echo https || echo http)
 
 bold ""
-bold "Fertig."
+bold "Done."
 bold ""
 info "App:   $SCHEME://$DOMAIN"
 bold ""
-bold "  Diesen Link auf dem Handy öffnen — er trägt Token und Wallet selbst ein:"
+bold "  Open this link on your phone — it fills in token and wallet for you:"
 bold ""
 SETUP_LINK="$SCHEME://$DOMAIN/#/setup?token=$ACCESS_TOKEN"
 [[ -n $WALLET ]] && SETUP_LINK="$SETUP_LINK&wallet=$WALLET"
 printf '  \033[1;33m%s\033[0m\n' "$SETUP_LINK"
 bold ""
-info "Danach: Teilen → Zum Home-Bildschirm."
+info "Then: Share → Add to Home Screen."
 if [[ ${TLS_OK:-0} -ne 1 ]]; then
-  warn "Ohne HTTPS ist die App nicht installierbar und nicht offline nutzbar."
+  warn "Without HTTPS the app cannot be installed and will not work offline."
 fi
 bold ""

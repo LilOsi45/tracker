@@ -13,7 +13,7 @@ import { initSetup } from './views/setup.js';
 import { initWallet } from './views/wallet.js';
 
 const TITLES = {
-  check: 'Pre-Buy',
+  check: 'Pre-buy',
   wallet: 'Wallet',
   coins: 'Coins',
   setup: 'Setup',
@@ -83,8 +83,8 @@ function consumeSetupLink() {
   if (Object.keys(patch).length === 0) return false;
 
   saveSettings(patch);
-  const saved = [token && 'Token', wallet && 'Wallet'].filter(Boolean).join(' und ');
-  setTimeout(() => toast(`${saved} übernommen`), 300);
+  const saved = [token && 'Token', wallet && 'wallet'].filter(Boolean).join(' and ');
+  setTimeout(() => toast(`${saved} applied`), 300);
   return true;
 }
 

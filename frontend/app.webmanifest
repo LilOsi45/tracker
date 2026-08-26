@@ -1,14 +1,14 @@
 {
   "name": "Tracker",
   "short_name": "Tracker",
-  "description": "Pre-Buy-Checkliste, Wallet-PnL und Coin-Übersicht für Solana",
+  "description": "Pre-buy checklist, wallet PnL and coin overview for Solana",
   "start_url": "./index.html#/check",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0B0E14",
   "theme_color": "#0B0E14",
-  "lang": "de",
+  "lang": "en",
   "icons": [
     {
       "src": "./icons/icon-192.png",

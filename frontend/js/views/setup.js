@@ -22,7 +22,7 @@ export function initSetup() {
   document.getElementById('bSave').addEventListener('click', () => {
     const address = els.wallet.value.trim();
     if (address && !BASE58.test(address)) {
-      return toast('Das ist keine gültige Solana-Adresse', true);
+      return toast('Not a valid Solana address', true);
     }
 
     saveSettings({
@@ -30,7 +30,7 @@ export function initSetup() {
       token: els.token.value.trim(),
       wallet: address,
     });
-    toast('Gesichert');
+    toast('Saved');
   });
 
   document.getElementById('bTest').addEventListener('click', async () => {
@@ -43,20 +43,20 @@ export function initSetup() {
     try {
       const { data, stale } = await api.health();
       if (stale) {
-        els.status.textContent = 'Keine Verbindung — nur zwischengespeicherte Antwort.';
-        return toast('Backend nicht erreichbar', true);
+        els.status.textContent = 'No connection — cached response only.';
+        return toast('Backend unreachable', true);
       }
       const notes = [
-        `Backend erreichbar. Helius-Key ${data.helius_configured ? 'gesetzt' : 'fehlt'}.`,
+        `Backend reachable. Helius key ${data.helius_configured ? 'set' : 'missing'}.`,
       ];
       if (!data.helius_configured) {
-        notes.push('Ohne Helius-Key läuft die Coin-Übersicht, aber kein Wallet-Sync.');
+        notes.push('Without a Helius key the coin list works, but wallet sync does not.');
       }
       els.status.textContent = notes.join(' ');
-      toast('Verbindung steht');
+      toast('Connection works');
     } catch (error) {
-      els.status.textContent = error.message || 'Verbindung fehlgeschlagen.';
-      toast('Verbindung fehlgeschlagen', true);
+      els.status.textContent = error.message || 'Connection failed.';
+      toast('Connection failed', true);
     }
   });
 

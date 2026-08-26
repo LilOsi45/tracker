@@ -26,7 +26,7 @@ export function renderChart(container, series) {
   if (!series || series.length === 0) {
     container.append(Object.assign(document.createElement('p'), {
       className: 'empty',
-      textContent: 'Noch keine Daten.',
+      textContent: 'No data yet.',
     }));
     return;
   }
@@ -38,7 +38,7 @@ export function renderChart(container, series) {
   const svg = el('svg', {
     viewBox: `0 0 ${W} ${H}`,
     role: 'img',
-    'aria-label': `Realisierter PnL der letzten ${series.length} Tage`,
+    'aria-label': `Realised PnL over the last ${series.length} days`,
     preserveAspectRatio: 'none',
   });
 
@@ -87,7 +87,7 @@ export function renderChart(container, series) {
       textContent: dayLabel(series[0].day),
     }),
     Object.assign(document.createElement('span'), {
-      textContent: `Summe ${sol(cumulative[cumulative.length - 1])}`,
+      textContent: `Total ${sol(cumulative[cumulative.length - 1])}`,
     }),
     Object.assign(document.createElement('span'), {
       textContent: dayLabel(series[series.length - 1].day),

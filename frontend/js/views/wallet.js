@@ -4,7 +4,7 @@ import { api, downloadCsv } from '../api.js';
 import { renderChart } from '../chart.js';
 import {
   direction,
-  eur,
+  usd,
   price,
   priceSol,
   pct,
@@ -40,9 +40,9 @@ function renderSummary(summary, stale) {
 
   const fiat = summary.realized_today_usd;
   const parts = [];
-  if (fiat !== null && fiat !== undefined) parts.push(eur(fiat));
+  if (fiat !== null && fiat !== undefined) parts.push(usd(fiat));
   if (summary.closes_today) {
-    parts.push(`${summary.closes_today} Abschluss${summary.closes_today === 1 ? '' : 'e'}`);
+    parts.push(`${summary.closes_today} close${summary.closes_today === 1 ? '' : 's'}`);
   }
   els.pnlTodayFiat.textContent = parts.join('  ·  ');
 
@@ -52,7 +52,7 @@ function renderSummary(summary, stale) {
   els.solBalance.textContent = balance === null || balance === undefined
     ? '—'
     : solPlain(balance);
-  els.solBalance.title = summary.sol_balance_usd ? eur(summary.sol_balance_usd) : '';
+  els.solBalance.title = summary.sol_balance_usd ? usd(summary.sol_balance_usd) : '';
 
   const unreal = summary.unrealized_sol;
   els.pnlUnreal.textContent = sol(unreal);
@@ -62,19 +62,19 @@ function renderSummary(summary, stale) {
   els.pnlLifetime.textContent = sol(summary.realized_lifetime_sol);
 
   const notes = [];
-  if (stale) notes.push('Offline — zwischengespeicherte Daten.');
+  if (stale) notes.push('Offline — showing cached data.');
   if (summary.sync && !summary.sync.backfill_complete) {
-    notes.push('Historie wird noch rückwärts geladen. Sync erneut ausführen, bis sie steht.');
+    notes.push('History is still loading backwards. Keep pressing Sync until it completes.');
   }
   if (hasUnrealizedHistory === false) {
     // Not a placeholder and not a bug: per-token daily history is not
     // reconstructible from the free APIs, so the chart only carries realized
     // PnL until the nightly snapshots have accumulated.
-    notes.push('Chart zeigt nur realisierten PnL — unrealisiert wird ab jetzt täglich mitgeschrieben.');
+    notes.push('Chart shows realised PnL only — unrealised is recorded daily from now on.');
   }
   if (summary.sync?.last_synced_at) {
     const when = new Date(summary.sync.last_synced_at * 1000);
-    notes.push(`Letzter Sync ${when.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}.`);
+    notes.push(`Last sync ${when.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}.`);
   }
   els.footnote.textContent = notes.join(' ');
 }
@@ -93,7 +93,7 @@ function positionRow(position) {
   const value = document.createElement('span');
   value.className = `row__value ${direction(position.unrealized_sol)}`;
   value.textContent =
-    position.unrealized_sol === null ? 'kein Preis' : sol(position.unrealized_sol);
+    position.unrealized_sol === null ? 'no price' : sol(position.unrealized_sol);
 
   top.append(name, value);
 
@@ -104,14 +104,14 @@ function positionRow(position) {
     // Not routable any more. Showing the entry price as "current" would
     // pretend the position still has its original value.
     meta.innerHTML =
-      `<span class="nb">Ein <b>${price(position.entry_price_usd)}</b></span> · ` +
-      `<span class="unknown">kein aktueller Preis — Token nicht mehr handelbar</span>`;
+      `<span class="nb">In <b>${price(position.entry_price_usd)}</b></span> · ` +
+      `<span class="unknown">no current price — token is no longer tradable</span>`;
   } else {
     meta.innerHTML =
-      `<span class="nb">Ein <b>${price(position.entry_price_usd)}</b></span> · ` +
-      `<span class="nb">Jetzt <b>${price(position.current_price_usd)}</b></span> · ` +
+      `<span class="nb">In <b>${price(position.entry_price_usd)}</b></span> · ` +
+      `<span class="nb">Now <b>${price(position.current_price_usd)}</b></span> · ` +
       `<span class="nb"><b>${pct(position.unrealized_pct)}</b></span> · ` +
-      `<span class="nb">Einsatz ${solPlain(position.cost_sol)}</span>`;
+      `<span class="nb">Cost ${solPlain(position.cost_sol)}</span>`;
   }
 
   row.append(top, meta);
@@ -140,12 +140,12 @@ function tradeRow(trade) {
 
   if (trade.basis_unknown) {
     meta.innerHTML =
-      `<span class="nb">Aus <b>${solPlain(trade.proceeds_sol)}</b></span> · ` +
-      `<span class="flag-bad">Einstieg unbekannt — PnL zu hoch</span>`;
+      `<span class="nb">Out <b>${solPlain(trade.proceeds_sol)}</b></span> · ` +
+      `<span class="flag-bad">entry unknown — PnL overstated</span>`;
   } else {
     meta.innerHTML =
-      `<span class="nb">Ein <b>${priceSol(trade.entry_price_sol)}</b></span> · ` +
-      `<span class="nb">Aus <b>${priceSol(trade.exit_price_sol)}</b></span> · ` +
+      `<span class="nb">In <b>${priceSol(trade.entry_price_sol)}</b></span> · ` +
+      `<span class="nb">Out <b>${priceSol(trade.exit_price_sol)}</b></span> · ` +
       `<span class="nb"><b>${pct(trade.pnl_pct)}</b></span>`;
   }
 
@@ -162,11 +162,11 @@ async function loadTrades({ append = false } = {}) {
 
   if (append) els.trades.append(...rows);
   else if (rows.length) els.trades.replaceChildren(...rows);
-  else empty(els.trades, 'Noch keine geschlossenen Trades.');
+  else empty(els.trades, 'No closed trades yet.');
 
   offset += data.trades.length;
   els.moreTrades.hidden = offset >= data.total;
-  els.tradesNote.textContent = data.total ? `${data.total} gesamt` : '';
+  els.tradesNote.textContent = data.total ? `${data.total} total` : '';
 }
 
 function setState(state, message = '') {
@@ -178,7 +178,7 @@ export async function loadWallet() {
   const address = wallet();
 
   if (!address) {
-    setState('empty', 'Keine Wallet hinterlegt.');
+    setState('empty', 'No wallet configured.');
     return;
   }
 
@@ -195,7 +195,7 @@ export async function loadWallet() {
     // A never-synced wallet has no data, not zero data. Rendering the normal
     // layout would show "+0.000 SOL" for today, which reads like a fact.
     if (!summary.data.sync?.last_synced_at) {
-      setState('unsynced', 'Noch nicht synchronisiert.\nSync holt deine Trade-Historie.');
+      setState('unsynced', 'Not synced yet.\nSync pulls in your trade history.');
       return;
     }
 
@@ -207,18 +207,18 @@ export async function loadWallet() {
 
     const list = positions.data.positions;
     if (list.length) els.positions.replaceChildren(...list.map(positionRow));
-    else empty(els.positions, 'Keine offenen Positionen.');
+    else empty(els.positions, 'No open positions.');
     els.posNote.textContent = list.length
-      ? `Wert ${solPlain(positions.data.totals.value_sol)}`
+      ? `Value ${solPlain(positions.data.totals.value_sol)}`
       : '';
 
     renderChart(els.chart, chart.data.series);
-    els.chartNote.textContent = 'realisiert pro Tag';
+    els.chartNote.textContent = 'realised per day';
 
     offset = 0;
     await loadTrades();
   } catch (error) {
-    toast(error.message || 'Laden fehlgeschlagen', true);
+    toast(error.message || 'Loading failed', true);
   } finally {
     loading = false;
   }
@@ -250,21 +250,21 @@ export function initWallet() {
 
   document.getElementById('bSync').addEventListener('click', async (event) => {
     const address = wallet();
-    if (!address) return toast('Keine Wallet hinterlegt', true);
+    if (!address) return toast('No wallet configured', true);
 
     event.target.disabled = true;
-    toast('Sync läuft …');
+    toast('Syncing …');
     try {
       const result = await api.sync(address);
-      const notes = [`${result.new_swaps} neue Swaps`];
-      if (!result.backfill_complete) notes.push('Historie unvollständig — nochmal syncen');
+      const notes = [`${result.new_swaps} new swaps`];
+      if (!result.backfill_complete) notes.push('history incomplete — sync again');
       if (result.sells_without_basis) {
-        notes.push(`${result.sells_without_basis} Verkäufe ohne Einstieg`);
+        notes.push(`${result.sells_without_basis} sells with no entry`);
       }
       toast(notes.join(' · '));
       await loadWallet();
     } catch (error) {
-      toast(error.message || 'Sync fehlgeschlagen', true);
+      toast(error.message || 'Sync failed', true);
     } finally {
       event.target.disabled = false;
     }
@@ -272,12 +272,12 @@ export function initWallet() {
 
   document.getElementById('bExport').addEventListener('click', async () => {
     const address = wallet();
-    if (!address) return toast('Keine Wallet hinterlegt', true);
+    if (!address) return toast('No wallet configured', true);
     try {
       await downloadCsv(address, 'blockpit', `blockpit-${address.slice(0, 6)}.csv`);
-      toast('Blockpit-CSV exportiert');
+      toast('Blockpit CSV exported');
     } catch (error) {
-      toast(error.message || 'Export fehlgeschlagen', true);
+      toast(error.message || 'Export failed', true);
     }
   });
 

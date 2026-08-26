@@ -1,21 +1,26 @@
-const EUR = new Intl.NumberFormat('de-DE', {
+/* Number and date formatting.
+
+   Locale is en-GB: 1,234.56 and 25/08/2026. Currency is USD throughout,
+   because every price source in this project (Jupiter, DexScreener,
+   CoinGecko) quotes USD. An earlier version rendered those same values with
+   a euro sign, which was simply wrong — off by whatever EUR/USD happened to
+   be. Converting would mean carrying an FX rate for no benefit; SOL and USD
+   are the units this market actually trades in.
+*/
+
+const DECIMAL = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-const COMPACT = new Intl.NumberFormat('de-DE', {
+const COMPACT = new Intl.NumberFormat('en-GB', {
   notation: 'compact',
   maximumFractionDigits: 1,
 });
 
-export function eur(value) {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${EUR.format(value)} €`;
-}
-
 export function usd(value, { compact = false } = {}) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return compact ? `$${COMPACT.format(value)}` : `$${EUR.format(value)}`;
+  return compact ? `$${COMPACT.format(value)}` : `$${DECIMAL.format(value)}`;
 }
 
 export function sol(value, digits = 3) {
@@ -24,7 +29,7 @@ export function sol(value, digits = 3) {
   return `${sign}${value.toFixed(digits)} SOL`;
 }
 
-/** Absolute SOL amount, no sign — for costs and proceeds. */
+/** Absolute SOL amount, no sign — for costs, proceeds and balances. */
 export function solPlain(value, digits = 3) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   return `${value.toFixed(digits)} SOL`;
@@ -33,13 +38,13 @@ export function solPlain(value, digits = 3) {
 export function pct(value, digits = 1) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(digits)} %`;
+  return `${sign}${value.toFixed(digits)}%`;
 }
 
 /** Bare percentage for shares, where a sign would be nonsense. */
 export function share(value, digits = 1) {
   if (value === null || value === undefined || Number.isNaN(value)) return null;
-  return `${value.toFixed(digits)} %`;
+  return `${value.toFixed(digits)}%`;
 }
 
 function trimZeros(text) {
@@ -68,9 +73,9 @@ export function priceSol(value) {
 
 export function ageFromMinutes(minutes) {
   if (minutes === null || minutes === undefined) return null;
-  if (minutes < 60) return `${Math.round(minutes)} min`;
-  if (minutes < 60 * 48) return `${Math.round(minutes / 60)} h`;
-  return `${Math.round(minutes / 1440)} d`;
+  if (minutes < 60) return `${Math.round(minutes)}m`;
+  if (minutes < 60 * 48) return `${Math.round(minutes / 60)}h`;
+  return `${Math.round(minutes / 1440)}d`;
 }
 
 export function ageFromUnix(seconds) {
@@ -80,7 +85,7 @@ export function ageFromUnix(seconds) {
 
 export function shortDate(seconds) {
   if (!seconds) return '—';
-  return new Date(seconds * 1000).toLocaleDateString('de-DE', {
+  return new Date(seconds * 1000).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: '2-digit',
   });
@@ -88,7 +93,7 @@ export function shortDate(seconds) {
 
 export function dayLabel(iso) {
   const [, month, day] = iso.split('-');
-  return `${day}.${month}.`;
+  return `${day}/${month}`;
 }
 
 export function truncate(text, head = 4, tail = 4) {

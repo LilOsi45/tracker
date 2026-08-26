@@ -62,7 +62,7 @@ function authorityFlag(token) {
   const open = [];
   if (mint === 1) open.push('Mint');
   if (freeze === 1) open.push('Freeze');
-  return `<span class="flag-bad">${open.join(' + ')} offen</span>`;
+  return `<span class="flag-bad">${open.join(' + ')} open</span>`;
 }
 
 function coinRow(token) {
@@ -88,7 +88,7 @@ function coinRow(token) {
   line1.innerHTML = [
     metric('MCap', token.market_cap ? usd(token.market_cap, { compact: true }) : null),
     metric('LP', token.liquidity_usd ? usd(token.liquidity_usd, { compact: true }) : null),
-    metric('Alter', ageFromMinutes(token.age_minutes)),
+    metric('Age', ageFromMinutes(token.age_minutes)),
     metric(
       'Vol/LP',
       token.volume_liquidity_ratio === null || token.volume_liquidity_ratio === undefined
@@ -100,9 +100,9 @@ function coinRow(token) {
   const line2 = document.createElement('div');
   line2.className = 'row__meta';
   line2.innerHTML = [
-    metric('Top-10', share(token.top10_pct), { bad: token.top10_pct > 25 }),
-    metric('Holder', token.holder_count),
-    metric('LP lock', share(token.lp_locked_pct), { bad: token.lp_locked_pct < 90 }),
+    metric('Top 10', share(token.top10_pct), { bad: token.top10_pct > 25 }),
+    metric('Holders', token.holder_count),
+    metric('LP locked', share(token.lp_locked_pct), { bad: token.lp_locked_pct < 90 }),
     `<span class="nb">${authorityFlag(token)}</span>`,
   ].join(' · ');
 
@@ -139,8 +139,8 @@ async function load({ append = false } = {}) {
         Object.assign(document.createElement('p'), {
           className: 'empty',
           textContent: active.size || els.search.value.trim()
-            ? 'Kein Token passt auf die Filter.'
-            : 'Noch nichts geladen. Aktualisieren drücken.',
+            ? 'No token matches these filters.'
+            : 'Nothing loaded yet. Press Refresh.',
         }),
       );
     }
@@ -148,12 +148,12 @@ async function load({ append = false } = {}) {
     offset += data.tokens.length;
     els.more.hidden = offset >= total;
 
-    const notes = [`${total} Token im Cache.`];
-    if (stale) notes.push('Offline — zwischengespeicherte Daten.');
-    notes.push('DexScreener hat keinen Feed für neue Pairs; die Liste ist Watchlist plus Suche.');
+    const notes = [`${total} tokens cached.`];
+    if (stale) notes.push('Offline — showing cached data.');
+    notes.push('DexScreener has no new-pairs feed; this list is watchlist plus search.');
     els.footnote.textContent = notes.join(' ');
   } catch (error) {
-    toast(error.message || 'Laden fehlgeschlagen', true);
+    toast(error.message || 'Loading failed', true);
   }
 }
 
@@ -215,13 +215,13 @@ export function initCoins() {
 
   document.getElementById('bCoinRefresh').addEventListener('click', async (event) => {
     event.target.disabled = true;
-    toast('Marktdaten werden geholt …');
+    toast('Fetching market data …');
     try {
       const result = await api.refreshCoins();
-      toast(`${result.market_updated} aktualisiert, ${result.safety_updated} geprüft`);
+      toast(`${result.market_updated} updated, ${result.safety_updated} checked`);
       await reload();
     } catch (error) {
-      toast(error.message || 'Aktualisieren fehlgeschlagen', true);
+      toast(error.message || 'Refresh failed', true);
     } finally {
       event.target.disabled = false;
     }

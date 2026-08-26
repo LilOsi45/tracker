@@ -11,21 +11,21 @@ import {
 } from '../store.js';
 
 const HARD = [
-  ['Mint Authority nicht revoked', 'Dev kann beliebig nachdrucken'],
-  ['Freeze Authority nicht revoked', 'Dev kann deine Wallet einfrieren'],
-  ['LP nicht burned / locked', 'Liquidität jederzeit abziehbar'],
-  ['Dev hält über 10 %', 'Ein Verkauf kippt den Chart'],
-  ['Bundle-Cluster sichtbar', 'Verdeckter Supply über mehrere Wallets'],
-  ['Dev hat bereits verkauft', 'Kein Grund mehr für ihn, zu liefern'],
+  ['Mint authority not revoked', 'Dev can print more at will'],
+  ['Freeze authority not revoked', 'Dev can freeze your wallet'],
+  ['LP not burned or locked', 'Liquidity can be pulled any time'],
+  ['Dev holds over 10%', 'One sell tips the whole chart'],
+  ['Visible bundle cluster', 'Hidden supply spread across wallets'],
+  ['Dev has already sold', 'No reason left for them to deliver'],
 ];
 
 const SOFT = [
-  ['Top 10 Holder über 25 %', 'ohne LP gerechnet'],
-  ['LP unter 15k $', 'Exit wird teuer, du bewegst den Preis'],
-  ['Volumen/LP-Ratio absurd', 'Hinweis auf Wash Trading'],
-  ['Holder-Zahl unrealistisch schnell', 'Bots statt Käufer'],
-  ['Social wirkt gebottet', 'Replies ohne echte Konten'],
-  ['Ticker existiert schon mehrfach', 'Copy-Launch auf fremdem Hype'],
+  ['Top 10 holders over 25%', 'excluding the LP'],
+  ['LP under $15k', 'Exit gets expensive, you move the price'],
+  ['Absurd volume/LP ratio', 'Points at wash trading'],
+  ['Holder count grew implausibly fast', 'Bots, not buyers'],
+  ['Socials look botted', 'Replies from accounts with no history'],
+  ['Ticker already exists elsewhere', 'Copy launch riding someone else’s hype'],
 ];
 
 const TOTAL = HARD.length + SOFT.length;
@@ -104,7 +104,7 @@ function setVerdict(state, word, note) {
 
 function score() {
   if (streak >= 3) {
-    setVerdict('stop', 'Feierabend', '3 Verluste in Folge. Tilt kostet mehr als jeder Rug.');
+    setVerdict('stop', 'Done', 'Three losses in a row. Tilt costs more than any rug.');
     return;
   }
 
@@ -114,34 +114,34 @@ function score() {
   if (hard > 0) {
     setVerdict(
       'stop',
-      'Abbrechen',
-      `${hard} Abbruchkriteri${hard > 1 ? 'en' : 'um'} erfüllt — kein Kauf`,
+      'Walk away',
+      `${hard} deal breaker${hard > 1 ? 's' : ''} hit — do not buy`,
     );
     return;
   }
 
   if (soft >= 2) {
-    setVerdict('warn', 'Vorsicht', `${soft} Warnsignale — halbe Position, wenn überhaupt`);
+    setVerdict('warn', 'Careful', `${soft} warning signs — half size at most, if at all`);
     return;
   }
 
   if (soft === 1) {
-    setVerdict('warn', 'Vorsicht', '1 Warnsignal — bewusst entscheiden, nicht wegklicken');
+    setVerdict('warn', 'Careful', '1 warning sign — decide on purpose, do not click past it');
     return;
   }
 
   // Nothing marked and no contract is not a clean token, it is an unread
-  // checklist. Saying "sauber" there would be the app lying to you.
+  // checklist. Saying "clean" there would be the app lying to you.
   if (!els.ca.value.trim()) {
-    setVerdict('', 'Bereit', 'Contract einfügen, dann durchgehen');
+    setVerdict('', 'Ready', 'Paste a contract, then work through the list');
     return;
   }
 
-  setVerdict('go', 'Sauber', `0 von ${TOTAL} markiert. Auto-Sell vor dem Kauf setzen.`);
+  setVerdict('go', 'Clean', `0 of ${TOTAL} flagged. Set your auto-sell before you buy.`);
 }
 
 function paintStreak() {
-  els.slot.textContent = `${streak} Verlust${streak === 1 ? '' : 'e'}`;
+  els.slot.textContent = `${streak} loss${streak === 1 ? '' : 'es'}`;
   els.slot.classList.toggle('is-hot', streak >= 3);
 }
 
@@ -159,13 +159,13 @@ function calc() {
   const budget = Number.parseFloat(els.budget.value) || 0;
   const risk = Number.parseFloat(els.risk.value) || 0;
   const size = (budget * risk) / 100;
-  const money = size.toLocaleString('de-DE', {
+  const money = size.toLocaleString('en-GB', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  els.size.textContent = `${money} €`;
-  els.exit.textContent = `${money} €`;
+  els.size.textContent = `$${money}`;
+  els.exit.textContent = `$${money}`;
   els.runs.textContent = risk > 0 ? String(Math.floor(100 / risk)) : '—';
 }
 

@@ -66,12 +66,12 @@ async function writeCache(url, data) {
 async function describe(response) {
   if (response.status === 401 || response.status === 403) {
     return getSettings().token
-      ? 'Token stimmt nicht — unter Setup prüfen.'
-      : 'Kein Token hinterlegt — unter Setup eintragen.';
+      ? 'Token is wrong — check it under Setup.'
+      : 'No token configured — enter it under Setup.';
   }
-  if (response.status === 404) return 'Endpunkt nicht gefunden.';
+  if (response.status === 404) return 'Endpoint not found.';
   const detail = await response.text().catch(() => '');
-  return detail.slice(0, 200) || response.statusText || `Fehler ${response.status}`;
+  return detail.slice(0, 200) || response.statusText || `Error ${response.status}`;
 }
 
 async function get(path, { signal } = {}) {
@@ -93,7 +93,7 @@ async function get(path, { signal } = {}) {
     const cached = await readCache(url);
     if (cached) return cached;
     if (error instanceof ApiError) throw error;
-    throw new ApiError('Backend nicht erreichbar', 0);
+    throw new ApiError('Backend unreachable', 0);
   }
 }
 
@@ -128,7 +128,7 @@ export const api = {
    the URL and out of any proxy log. */
 export async function downloadCsv(wallet, kind, filename) {
   const response = await fetch(api.exportUrl(wallet, kind), { headers: headers() });
-  if (!response.ok) throw new ApiError('Export fehlgeschlagen', response.status);
+  if (!response.ok) throw new ApiError('Export failed', response.status);
 
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);

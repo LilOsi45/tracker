@@ -1,103 +1,110 @@
 # tracker
 
-Privates Solana-Memecoin-Tool. Single-User, mobile-first, PWA vor
-FastAPI-Backend.
+Private Solana memecoin tool. Single user, mobile-first, a PWA in front of a
+FastAPI backend.
 
-## Stand
+## Status
 
-**Phase 1: fertig und deploybar.** Backend (Wallet-Tracker mit FIFO-PnL,
-Coin-Übersicht, CSV-Export) und PWA (Pre-Buy-Check, Wallet, Coins, Setup),
-installierbar auf dem Homescreen und offline nutzbar.
+**Phase 1: done and deployable.** Backend (wallet tracker with FIFO PnL, coin
+overview, CSV export) and PWA (pre-buy check, wallet, coins, setup),
+installable on the home screen and usable offline.
 
-**Phase 2 — Screener + Discord: offen.** Die Filter-Konfiguration liegt
-bereits in `config.example.yaml`, wird aber noch nicht gelesen.
+**Phase 2 — screener + Discord: open.** The filter configuration already sits
+in `config.example.yaml` but is not read yet.
 
 ## Frontend
 
-Vanilla HTML/CSS/JS als ES-Module, kein Build-Step. Das Backend liefert
-`frontend/` direkt aus, die PWA spricht also standardmäßig mit derselben
-Herkunft — unter *Setup* lässt sich eine abweichende API-URL setzen.
+Vanilla HTML/CSS/JS as ES modules, no build step. The backend serves
+`frontend/` directly, so the PWA talks to the same origin by default — a
+different API URL can be set under *Setup*.
 
-Gestaltungsregel, an die sich `css/app.css` hält: **eine** Ebene sichtbarer
-Struktur. Gruppiert wird über Weißraum, nicht über Rahmen und Panels; eine
-Haarlinie nur dort, wo zwei Zeilen sonst ineinanderlaufen. Pro Screen trägt
-genau **ein** Element Gewicht — das Verdict auf Check, der Tages-PnL auf
-Wallet. Alles andere tritt zurück, damit diese eine Sache in einem Blick
-lesbar ist.
+The design rule `css/app.css` follows: **one** layer of visible structure.
+Grouping is done with whitespace, not with borders and panels; a hairline only
+where two rows would otherwise run into each other. Exactly **one** element per
+screen carries weight — the verdict on Check, the day's PnL on Wallet.
+Everything else recedes so that one thing reads in a single glance.
 
-Die Icons sind generiert, nicht eingecheckt-und-vergessen:
+All prices are USD, because every source in this project (Jupiter,
+DexScreener, CoinGecko) quotes USD. There is no FX conversion.
+
+The icons are generated, not checked in and forgotten:
 
 ```bash
 python3 scripts/make_icons.py
 ```
 
-## Setup
+## Local setup
 
 ```bash
 cd backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 cd ..
-cp .env.example .env              # HELIUS_API_KEY eintragen
+cp .env.example .env              # add HELIUS_API_KEY
 cp config.example.yaml config.yaml
 
 backend/.venv/bin/uvicorn app.main:app --app-dir backend --reload
 ```
 
-Ohne `HELIUS_API_KEY` läuft alles außer dem Wallet-Sync — die Coin-Übersicht
-braucht keinen Key.
+Without `HELIUS_API_KEY` everything works except the wallet sync — the coin
+overview needs no key.
 
-### Erster Sync
+### First sync
 
 ```bash
-curl -X POST localhost:8000/api/wallet/<ADRESSE>/sync
+curl -X POST localhost:8000/api/wallet/<ADDRESS>/sync
 ```
 
-Der erste Aufruf holt bis zu 60 Seiten à 100 Transaktionen und läuft dann
-weiter rückwärts durch die Historie. Bei einer aktiven Wallet sind mehrere
-Aufrufe nötig, bis `backfill_complete` auf `true` steht. Danach ist der Sync
-inkrementell und billig.
+The first call fetches up to 60 pages of 100 transactions and then keeps
+walking backwards through the history. An active wallet needs several calls
+before `backfill_complete` turns `true`. After that the sync is incremental and
+cheap.
 
 ## API
 
-| Endpoint | Zweck |
+| Endpoint | Purpose |
 |---|---|
-| `POST /api/wallet/{addr}/sync` | Historie holen und Ledger neu berechnen |
-| `GET /api/wallet/{addr}/summary` | Tages-PnL, realisiert und unrealisiert getrennt |
-| `GET /api/wallet/{addr}/positions` | Offene Positionen mit Einstieg, aktuellem Preis, PnL |
-| `GET /api/wallet/{addr}/chart?days=30` | Tagesreihe für den Verlauf |
-| `GET /api/wallet/{addr}/trades` | Geschlossene Trades |
-| `GET /api/wallet/{addr}/export/blockpit.csv` | Steuer-Export, transaktionsbasiert |
-| `GET /api/wallet/{addr}/export/trades.csv` | Trade-Übersicht zum Lesen |
-| `GET /api/coins` | Coin-Übersicht, filter- und sortierbar |
-| `POST /api/coins/refresh` | Marktdaten + RugCheck-Anreicherung |
-| `GET /api/coins/{mint}` | Einzelner Token inkl. RugCheck-Details |
+| `POST /api/wallet/{addr}/sync` | Fetch history and recompute the ledger |
+| `GET /api/wallet/{addr}/summary` | Day PnL, realised and unrealised kept apart, SOL balance |
+| `GET /api/wallet/{addr}/positions` | Open positions with entry, current price, PnL |
+| `GET /api/wallet/{addr}/chart?days=30` | Daily series for the history chart |
+| `GET /api/wallet/{addr}/trades` | Closed trades |
+| `GET /api/wallet/{addr}/export/blockpit.csv` | Tax export, transaction-based |
+| `GET /api/wallet/{addr}/export/trades.csv` | Trade overview for reading |
+| `GET /api/coins` | Coin overview, filterable and sortable |
+| `POST /api/coins/refresh` | Market data + RugCheck enrichment |
+| `GET /api/coins/{mint}` | Single token including RugCheck detail |
 
-## Architektur
+## Architecture
 
-Rohe Swaps sind die Wahrheit; offene Lots und realisierte PnL-Zeilen sind
-abgeleitet und werden bei jedem Sync aus der Swap-Tabelle neu gerechnet. Ein
-Bug in der Buchhaltung kostet damit einen Neustart der Berechnung, keinen
-erneuten API-Abruf.
+Raw swaps are the truth; open lots and realised PnL rows are derived and
+recomputed from the swap table on every sync. A bug in the accounting therefore
+costs a recomputation, not another round of API calls.
 
-Buchhaltungswährung ist **SOL**, weil das exakt aus der Chain kommt. USD ist
-eine Darstellungsschicht auf Basis des Tagesschlusskurses — nie umgekehrt,
-das würde einen Preisfehler in die Kostenbasis einbacken.
+The accounting currency is **SOL**, because that is what comes off the chain
+exactly. USD is a presentation layer on top of the daily close — never the
+other way round, which would bake a price error into the cost basis itself.
 
-Kostenbasis ist **FIFO**.
+Cost basis is **FIFO**.
 
-## Was nicht geht
+## What does not work
 
-Steht vollständig in [`docs/data-sources.md`](docs/data-sources.md). Kurz:
-DexScreener hat keinen Neuemissions-Feed, Holder-Zahlen sind lückenhaft,
-und historischer unrealisierter PnL ist nicht rückwirkend rekonstruierbar —
-er wird ab Inbetriebnahme täglich gesnapshottet.
+Written out in full in [`docs/data-sources.md`](docs/data-sources.md). Briefly:
+DexScreener has no new-issue feed, holder counts are patchy, and historical
+unrealised PnL cannot be reconstructed retroactively — it is snapshotted daily
+from the day the tool goes live.
 
 ## Deployment (Hetzner)
 
-Auf einer frischen Debian- oder Ubuntu-Kiste als root. Das Repo ist privat,
-also braucht sowohl das Holen des Skripts als auch der Klon ein GitHub-Token
-mit Lesezugriff (fein granuliert, nur dieses Repo, *Contents: Read-only*):
+On a fresh Debian or Ubuntu box, as root:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
+```
+
+If the repository is private, both fetching the script and cloning need a
+GitHub token with read access (fine-grained, this repository only,
+*Contents: Read-only*):
 
 ```bash
 export GH_TOKEN=github_pat_...
@@ -106,71 +113,70 @@ curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
   | GH_TOKEN=$GH_TOKEN bash
 ```
 
-Ist das Repo öffentlich, entfallen Header und `GH_TOKEN`:
+That token is used only for the transfer itself and never lands in
+`.git/config` — the cost being that a later re-run needs it again.
+
+Instead of answering the prompts, every value can be set beforehand. On a phone
+that is the nicer path, because a pasted value without a closing Return looks
+exactly like a hung script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
-```
-
-Statt der Abfragen lassen sich alle Antworten vorab setzen — auf einem Handy
-angenehmer, weil ein eingefügter Wert ohne abschließendes Return sonst wie
-ein hängendes Skript aussieht:
-
-```bash
-export DOMAIN=tracker.deine-domain.de
+export DOMAIN=tracker.your-domain.com
 export HELIUS_KEY=...
 export WALLET=...
-export EMAIL=du@example.de
+export EMAIL=you@example.com
 curl -fsSL https://raw.githubusercontent.com/LilOsi45/tracker/claude/solana-memecoin-trading-igtdv3/deploy/install.sh | bash
 ```
 
-Das Token wird nur für die Übertragung selbst benutzt und landet nicht in
-`.git/config` — dafür braucht ein späterer erneuter Aufruf es wieder.
-
-Das Skript fragt Domain, Helius-Key und Wallet ab, erzeugt den Access-Token
-selbst und richtet Dienst, nginx und Zertifikat ein. Am Ende druckt es einen
-Link, der Token und Wallet beim Öffnen in die App überträgt — auf einem
-Handy muss dadurch nichts abgetippt werden. Ein erneuter Aufruf aktualisiert
-den Checkout und behält den bestehenden Token.
+The script asks for domain, Helius key and wallet, generates the access token
+itself, and sets up the service, nginx and the certificate. At the end it
+prints a link that carries token and wallet into the app when opened, so
+nothing long has to be typed on a phone. A re-run updates the checkout, keeps
+the existing token, and restarts the service so the new code actually takes
+effect.
 
 <details>
-<summary>Dieselben Schritte einzeln</summary>
+<summary>The same steps individually</summary>
 
 ```bash
-# Dienstkonto ohne Login und ohne Home
+# service account with no login and no home
 useradd --system --no-create-home --shell /usr/sbin/nologin tracker
 
 git clone <repo> /opt/tracker && cd /opt/tracker
 python3 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements.txt
-cp .env.example .env && cp config.example.yaml config.yaml   # Key + Wallet eintragen
+cp .env.example .env && cp config.example.yaml config.yaml   # add key + wallet
 install -o tracker -g tracker -d /opt/tracker/data
 
-# .env enthält Secrets und geht niemanden sonst etwas an
+# .env holds secrets and is nobody else's business
 chown tracker:tracker .env && chmod 600 .env
 
 cp deploy/tracker.service /etc/systemd/system/
-systemctl daemon-reload && systemctl enable --now tracker
+systemctl daemon-reload && systemctl enable tracker && systemctl restart tracker
 systemctl status tracker --no-pager
 
 ln -s /opt/tracker/deploy/nginx.conf /etc/nginx/sites-enabled/tracker
-# server_name in der Config auf die eigene Domain setzen, dann:
-certbot --nginx -d tracker.example.de
+# point server_name in the config at your own domain, then:
+certbot --nginx -d tracker.example.com
 ```
 
 </details>
 
-`deploy/nginx.conf` ist bewusst reines HTTP. Certbot schreibt den TLS-Block
-selbst hinein. Ein vorab eingetragenes `listen 443 ssl` würde nginx ohne
-vorhandenes Zertifikat gar nicht starten lassen, und eine vorzeitige
-HTTPS-Weiterleitung verhindert zusätzlich, dass certbot seine eigene
-HTTP-01-Challenge beantworten kann.
+`deploy/nginx.conf` is deliberately plain HTTP. Certbot writes the TLS block
+into it itself. A pre-written `listen 443 ssl` would stop nginx from starting
+at all without a certificate on disk, and a premature HTTPS redirect would also
+stop certbot from answering its own HTTP-01 challenge.
 
-TLS ist nicht optional: ohne HTTPS registriert kein Browser den Service
-Worker, und ohne den ist die App nicht installierbar und nicht offline
-nutzbar.
+TLS is not optional: without HTTPS no browser registers the service worker, and
+without that the app is neither installable nor usable offline.
 
-Der `ACCESS_TOKEN` schützt die gesamte API. Ohne ihn liest jeder, der die
-URL kennt, deine Wallet-Historie und verbrennt deine Helius-Credits.
+`ACCESS_TOKEN` protects the whole API. Without it, anyone who knows the URL can
+read your wallet history and burn your Helius credits.
+
+The wallet is configured in **two** places, and they serve different purposes:
+under *Setup* in the app for what you see on screen, and in `config.yaml` under
+`app.wallets` for the scheduler that syncs automatically and writes the nightly
+equity snapshot. Only the second one keeps the 30-day unrealised history
+filling in.
 
 ## Tests
 

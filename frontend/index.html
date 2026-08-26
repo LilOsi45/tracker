@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -24,7 +24,7 @@
 <div class="shell">
 
   <header class="topbar">
-    <span class="topbar__title" id="viewTitle">Pre-Buy</span>
+    <span class="topbar__title" id="viewTitle">Pre-buy</span>
     <span class="topbar__slot" id="topbarSlot"></span>
   </header>
 
@@ -34,14 +34,14 @@
     <section class="view" id="view-check" hidden>
 
       <div class="verdict" id="verdict" role="status" aria-live="polite">
-        <p class="verdict__word" id="verdictWord">Bereit</p>
-        <p class="verdict__note" id="verdictNote">Contract einfügen, dann durchgehen</p>
+        <p class="verdict__word" id="verdictWord">Ready</p>
+        <p class="verdict__note" id="verdictNote">Paste a contract, then work through the list</p>
       </div>
 
       <div class="block">
-        <input class="field field--ca" type="text" id="ca" placeholder="Contract-Adresse"
+        <input class="field field--ca" type="text" id="ca" placeholder="Contract address"
                autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
-        <nav class="jump" id="jump" aria-label="Token öffnen in">
+        <nav class="jump" id="jump" aria-label="Open token in">
           <a data-jump="rugcheck" aria-disabled="true" target="_blank" rel="noopener">RugCheck</a>
           <a data-jump="bubblemaps" aria-disabled="true" target="_blank" rel="noopener">Bubblemaps</a>
           <a data-jump="axiom" aria-disabled="true" target="_blank" rel="noopener">Axiom</a>
@@ -51,12 +51,12 @@
       </div>
 
       <div class="block">
-        <p class="label label--danger">Abbruch <span>1 Treffer und du bist raus</span></p>
+        <p class="label label--danger">Deal breakers <span>one hit and you walk</span></p>
         <div id="hard"></div>
       </div>
 
       <div class="block">
-        <p class="label">Warnsignale <span>ab 2 kritisch</span></p>
+        <p class="label">Warning signs <span>two or more is serious</span></p>
         <div id="soft"></div>
       </div>
 
@@ -64,33 +64,33 @@
         <p class="label">Position</p>
         <div class="pair">
           <label>
-            <span>Budget €</span>
+            <span>Budget $</span>
             <input class="field" type="number" id="budget" value="300" min="0" step="10" inputmode="decimal">
           </label>
           <label>
-            <span>Pro Trade %</span>
+            <span>Per trade %</span>
             <input class="field" type="number" id="risk" value="5" min="1" max="25" step="1" inputmode="decimal">
           </label>
         </div>
         <dl class="readout">
-          <div><dt>Einsatz</dt><dd id="oSize">15,00 €</dd></div>
-          <div><dt>Bei 2× raus</dt><dd id="oExit">15,00 €</dd></div>
-          <div><dt>Trades bis leer</dt><dd id="oRuns">20</dd></div>
+          <div><dt>Stake</dt><dd id="oSize">$15.00</dd></div>
+          <div><dt>Take out at 2×</dt><dd id="oExit">$15.00</dd></div>
+          <div><dt>Trades until broke</dt><dd id="oRuns">20</dd></div>
         </dl>
       </div>
 
       <div class="actions">
-        <button type="button" class="btn btn--win" id="bWin">Gewinn</button>
-        <button type="button" class="btn btn--loss" id="bLoss">Verlust</button>
-        <button type="button" class="btn" id="bReset">Neu</button>
+        <button type="button" class="btn btn--win" id="bWin">Win</button>
+        <button type="button" class="btn btn--loss" id="bLoss">Loss</button>
+        <button type="button" class="btn" id="bReset">Reset</button>
       </div>
 
       <ul class="creed">
-        <li>Positionsgröße ist fix, kein Bauchgefühl</li>
-        <li>Bei 2× den Einsatz rausnehmen</li>
-        <li>Kein Nachkaufen in Verlusten</li>
-        <li>3 Verluste in Folge → Tag beenden</li>
-        <li>Nur Kapital, das komplett auf null darf</li>
+        <li>Position size is fixed, no gut feeling</li>
+        <li>At 2×, take the stake back out</li>
+        <li>Never average down on a loser</li>
+        <li>Three losses in a row, day is over</li>
+        <li>Only money that is allowed to go to zero</li>
       </ul>
 
     </section>
@@ -101,36 +101,36 @@
       <!-- Shown instead of the data, never alongside it. -->
       <div class="notice" id="walletNotice">
         <p class="notice__text" id="walletNoticeText"></p>
-        <a class="btn" id="walletNoticeAction" href="#/setup">Zur Einrichtung</a>
+        <a class="btn" id="walletNoticeAction" href="#/setup">Go to setup</a>
       </div>
 
       <div class="hero wallet-live" id="walletHero">
-        <p class="hero__label">Heute realisiert</p>
+        <p class="hero__label">Realised today</p>
         <p class="hero__value" id="pnlToday">—</p>
         <p class="hero__sub" id="pnlTodayFiat"></p>
       </div>
 
       <dl class="readout readout--split wallet-live" id="walletStats">
-        <div><dt>SOL im Wallet</dt><dd id="solBalance">—</dd></div>
-        <div><dt>Unrealisiert</dt><dd id="pnlUnreal">—</dd></div>
-        <div><dt>Offene Positionen</dt><dd id="posCount">—</dd></div>
-        <div><dt>Realisiert gesamt</dt><dd id="pnlLifetime">—</dd></div>
+        <div><dt>SOL in wallet</dt><dd id="solBalance">—</dd></div>
+        <div><dt>Unrealised</dt><dd id="pnlUnreal">—</dd></div>
+        <div><dt>Open positions</dt><dd id="posCount">—</dd></div>
+        <div><dt>Realised all time</dt><dd id="pnlLifetime">—</dd></div>
       </dl>
 
       <div class="block wallet-live">
-        <p class="label">30 Tage <span id="chartNote"></span></p>
+        <p class="label">30 days <span id="chartNote"></span></p>
         <div id="chart" class="chart"></div>
       </div>
 
       <div class="block wallet-live">
-        <p class="label">Offen <span id="posNote"></span></p>
+        <p class="label">Open <span id="posNote"></span></p>
         <div id="positions" class="list"></div>
       </div>
 
       <div class="block wallet-live">
-        <p class="label">Historie <span id="tradesNote"></span></p>
+        <p class="label">History <span id="tradesNote"></span></p>
         <div id="trades" class="list"></div>
-        <button type="button" class="btn btn--ghost" id="moreTrades" hidden>Mehr laden</button>
+        <button type="button" class="btn btn--ghost" id="moreTrades" hidden>Load more</button>
       </div>
 
       <div class="actions actions--two wallet-actions">
@@ -146,28 +146,28 @@
     <section class="view" id="view-coins" hidden>
 
       <div class="block">
-        <input class="field" type="search" id="coinSearch" placeholder="Symbol oder Mint"
+        <input class="field" type="search" id="coinSearch" placeholder="Symbol or mint"
                autocapitalize="off" autocorrect="off" spellcheck="false">
         <div class="chips" id="coinFilters">
           <button type="button" class="chip" data-filter="authorities">Authority revoked</button>
           <button type="button" class="chip" data-filter="lp">LP &gt; 15k</button>
-          <button type="button" class="chip" data-filter="top10">Top-10 &lt; 25%</button>
-          <button type="button" class="chip" data-filter="fresh">&lt; 4 h</button>
+          <button type="button" class="chip" data-filter="top10">Top 10 &lt; 25%</button>
+          <button type="button" class="chip" data-filter="fresh">&lt; 4h old</button>
         </div>
         <div class="chips chips--sort" id="coinSort">
           <button type="button" class="chip" data-sort="liquidity_usd">LP</button>
           <button type="button" class="chip" data-sort="market_cap">MCap</button>
           <button type="button" class="chip" data-sort="volume_24h">Vol</button>
-          <button type="button" class="chip" data-sort="pair_created_at">Alter</button>
-          <button type="button" class="chip" data-sort="top10_pct">Top-10</button>
+          <button type="button" class="chip" data-sort="pair_created_at">Age</button>
+          <button type="button" class="chip" data-sort="top10_pct">Top 10</button>
         </div>
       </div>
 
       <div id="coins" class="list"></div>
 
       <div class="actions actions--two">
-        <button type="button" class="btn" id="bCoinRefresh">Aktualisieren</button>
-        <button type="button" class="btn btn--ghost" id="bCoinMore" hidden>Mehr</button>
+        <button type="button" class="btn" id="bCoinRefresh">Refresh</button>
+        <button type="button" class="btn btn--ghost" id="bCoinMore" hidden>More</button>
       </div>
 
       <p class="footnote" id="coinsFootnote"></p>
@@ -180,42 +180,43 @@
       <div class="block">
         <p class="label">Backend</p>
         <label class="stack">
-          <span>API-URL</span>
-          <input class="field" type="url" id="cfgApi" placeholder="https://tracker.example.de"
+          <span>API URL</span>
+          <input class="field" type="url" id="cfgApi" placeholder="https://tracker.example.com"
                  autocapitalize="off" autocorrect="off" spellcheck="false">
         </label>
         <label class="stack">
-          <span>Access-Token</span>
+          <span>Access token</span>
           <!-- Readable on purpose: this is your own phone, and a masked field
                makes a mis-paste impossible to spot. -->
-          <input class="field field--ca" type="text" id="cfgToken" placeholder="aus der .env auf dem Server"
+          <input class="field field--ca" type="text" id="cfgToken" placeholder="from .env on the server"
                  autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off">
         </label>
-        <p class="hint">API-URL leer lassen = gleiche Herkunft wie diese Seite.
-          Den Token findest du auf dem Server mit
+        <p class="hint">Leave the API URL empty to use the same origin as this page.
+          Find the token on the server with
           <code>grep ACCESS_TOKEN /opt/tracker/.env</code>.</p>
       </div>
 
       <div class="block">
         <p class="label">Wallet</p>
         <label class="stack">
-          <span>Solana-Adresse</span>
-          <input class="field" type="text" id="cfgWallet" placeholder="Adresse"
+          <span>Solana address</span>
+          <input class="field" type="text" id="cfgWallet" placeholder="Address"
                  autocapitalize="off" autocorrect="off" spellcheck="false">
         </label>
       </div>
 
       <div class="actions actions--two">
-        <button type="button" class="btn btn--win" id="bSave">Sichern</button>
-        <button type="button" class="btn" id="bTest">Verbindung prüfen</button>
+        <button type="button" class="btn btn--win" id="bSave">Save</button>
+        <button type="button" class="btn" id="bTest">Test connection</button>
       </div>
 
       <p class="footnote" id="setupStatus"></p>
 
       <div class="block">
-        <p class="label">Daten</p>
-        <p class="hint" id="offlineHint">Prüfliste und Positionsrechner laufen ohne Netz.
-          Wallet- und Coin-Daten werden zwischengespeichert und offline aus dem Cache gezeigt.</p>
+        <p class="label">Data</p>
+        <p class="hint" id="offlineHint">The checklist and the position sizer work with no
+          connection. Wallet and coin data are cached and shown from that cache when
+          you are offline.</p>
       </div>
 
     </section>
