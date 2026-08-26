@@ -3,11 +3,11 @@
 import { api, downloadCsv } from '../api.js';
 import { renderChart } from '../chart.js';
 import {
+  bare,
   direction,
   usd,
-  price,
-  priceSol,
   pct,
+  sci,
   shortDate,
   sol,
   solPlain,
@@ -27,10 +27,24 @@ function wallet() {
   return getSettings().wallet.trim();
 }
 
-function empty(node, text) {
-  node.replaceChildren(
-    Object.assign(document.createElement('p'), { className: 'empty', textContent: text }),
-  );
+/* Both lists are tables now, so an empty state has to be a row that spans
+   the columns — a stray <p> inside a <tbody> is invalid and the browser
+   hoists it out of the table. */
+function empty(tbody, text) {
+  const row = document.createElement('tr');
+  const cell = document.createElement('td');
+  cell.colSpan = 4;
+  cell.className = 'empty';
+  cell.textContent = text;
+  row.append(cell);
+  tbody.replaceChildren(row);
+}
+
+function cell(text, className = '') {
+  const td = document.createElement('td');
+  td.textContent = text;
+  if (className) td.className = className;
+  return td;
 }
 
 function renderSummary(summary, stale) {
@@ -80,76 +94,49 @@ function renderSummary(summary, stale) {
 }
 
 function positionRow(position) {
-  const row = document.createElement('div');
-  row.className = 'row';
+  const row = document.createElement('tr');
+  const priced =
+    position.current_price_usd !== null && position.current_price_usd !== undefined;
 
-  const top = document.createElement('div');
-  top.className = 'row__top';
-
-  const name = document.createElement('span');
-  name.className = 'row__name';
-  name.textContent = position.symbol || truncate(position.mint, 5, 4);
-
-  const value = document.createElement('span');
-  value.className = `row__value ${direction(position.unrealized_sol)}`;
-  value.textContent =
-    position.unrealized_sol === null ? 'no price' : sol(position.unrealized_sol);
-
-  top.append(name, value);
-
-  const meta = document.createElement('div');
-  meta.className = 'row__meta';
-
-  if (position.current_price_usd === null || position.current_price_usd === undefined) {
-    // Not routable any more. Showing the entry price as "current" would
-    // pretend the position still has its original value.
-    meta.innerHTML =
-      `<span class="nb">In <b>${price(position.entry_price_usd)}</b></span> · ` +
-      `<span class="unknown">no current price — token is no longer tradable</span>`;
-  } else {
-    meta.innerHTML =
-      `<span class="nb">In <b>${price(position.entry_price_usd)}</b></span> · ` +
-      `<span class="nb">Now <b>${price(position.current_price_usd)}</b></span> · ` +
-      `<span class="nb"><b>${pct(position.unrealized_pct)}</b></span> · ` +
-      `<span class="nb">Cost ${solPlain(position.cost_sol)}</span>`;
-  }
-
-  row.append(top, meta);
+  row.append(cell(position.symbol || truncate(position.mint, 5, 4)));
+  row.append(cell(sci(position.entry_price_usd), 'num'));
+  // Not routable any more. Showing the entry price as "current" would pretend
+  // the position still has its original value, so it stays a dash.
+  row.append(cell(priced ? sci(position.current_price_usd) : '—', 'num'));
+  row.append(
+    cell(
+      priced ? bare(sol(position.unrealized_sol)) : '—',
+      priced ? direction(position.unrealized_sol) : 'is-muted',
+    ),
+  );
+  row.title = priced
+    ? `${pct(position.unrealized_pct)} · cost ${solPlain(position.cost_sol)}`
+    : 'no current price — token is no longer tradable';
   return row;
 }
 
 function tradeRow(trade) {
-  const row = document.createElement('div');
-  row.className = 'row';
+  const row = document.createElement('tr');
 
-  const top = document.createElement('div');
-  top.className = 'row__top';
-
-  const name = document.createElement('span');
-  name.className = 'row__name';
-  name.textContent = `${shortDate(trade.closed_at)}  ${trade.symbol || truncate(trade.mint, 5, 4)}`;
-
-  const value = document.createElement('span');
-  value.className = `row__value ${direction(trade.pnl_sol)}`;
-  value.textContent = sol(trade.pnl_sol);
-
-  top.append(name, value);
-
-  const meta = document.createElement('div');
-  meta.className = 'row__meta';
-
+  const first = document.createElement('td');
+  first.append(
+    `${shortDate(trade.closed_at)} ${trade.symbol || truncate(trade.mint, 5, 4)}`,
+  );
   if (trade.basis_unknown) {
-    meta.innerHTML =
-      `<span class="nb">Out <b>${solPlain(trade.proceeds_sol)}</b></span> · ` +
-      `<span class="flag-bad">entry unknown — PnL overstated</span>`;
-  } else {
-    meta.innerHTML =
-      `<span class="nb">In <b>${priceSol(trade.entry_price_sol)}</b></span> · ` +
-      `<span class="nb">Out <b>${priceSol(trade.exit_price_sol)}</b></span> · ` +
-      `<span class="nb"><b>${pct(trade.pnl_pct)}</b></span>`;
+    const flag = document.createElement('span');
+    flag.className = 'flag';
+    flag.textContent = ' no entry';
+    first.append(flag);
   }
+  row.append(first);
 
-  row.append(top, meta);
+  row.append(cell(trade.basis_unknown ? '—' : sci(trade.entry_price_sol), 'num'));
+  row.append(cell(sci(trade.exit_price_sol), 'num'));
+  row.append(cell(bare(sol(trade.pnl_sol)), direction(trade.pnl_sol)));
+
+  row.title = trade.basis_unknown
+    ? 'entry unknown — PnL overstated'
+    : `${pct(trade.pnl_pct)} · cost ${solPlain(trade.cost_sol)}`;
   return row;
 }
 

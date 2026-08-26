@@ -13,7 +13,7 @@
 
 // Bumping this drops the previous caches in `activate`. Needed once here to
 // clear the stale shell left behind by the old cache-first worker.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL = `tracker-shell-${VERSION}`;
 const FONTS = `tracker-fonts-${VERSION}`;
 

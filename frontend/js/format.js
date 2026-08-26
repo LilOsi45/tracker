@@ -71,6 +71,32 @@ export function priceSol(value) {
   return `${significant(value)} SOL`;
 }
 
+/** Compact price for a table column.
+
+    Memecoin prices run to 0.000000475, which is eleven characters and blows
+    a four-column layout off a 390px screen. Below a thousandth we switch to
+    exponent notation — two significant digits is all the precision that
+    means anything at that scale anyway, and every cell then has roughly the
+    same width, which is what makes a column of figures readable. */
+export function sci(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === 0) return '0';
+  const abs = Math.abs(value);
+  if (abs >= 0.001 && abs < 100000) return trimZeros(value.toFixed(abs >= 1 ? 3 : 5));
+  return value.toExponential(1).replace('e-', 'e−');
+}
+
+/** Strip the unit off a formatted price.
+
+    In a table the column header carries the unit, so repeating "$" or " SOL"
+    in every cell only costs width and breaks the alignment of the digits.
+    Kept as a stripper rather than a second formatter so the significant-digit
+    scaling has exactly one implementation. */
+export function bare(text) {
+  if (!text || text === '—') return '—';
+  return text.replace(/^\$/, '').replace(/ SOL$/, '');
+}
+
 export function ageFromMinutes(minutes) {
   if (minutes === null || minutes === undefined) return null;
   if (minutes < 60) return `${Math.round(minutes)}m`;

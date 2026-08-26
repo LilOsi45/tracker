@@ -16,8 +16,8 @@ from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "frontend" / "icons"
 
-BG = (0x0B, 0x0E, 0x14, 255)
-BRASS = (0xC8, 0x87, 0x3A, 255)
+BG = (0x00, 0x00, 0x00, 255)
+AMBER = (0xF0, 0xA3, 0x2E, 255)
 CLEAR = (0, 0, 0, 0)
 
 SS = 4  # supersampling factor
@@ -75,7 +75,7 @@ def render(size: int, *, rounded: bool, ring_outer: float, ring_width: float, do
             if not in_rounded_rect(x + 0.5, y + 0.5, n, radius_corner):
                 hi.append(CLEAR)
             elif inner**2 <= dist_sq <= outer**2 or dist_sq <= dot_r**2:
-                hi.append(BRASS)
+                hi.append(AMBER)
             else:
                 hi.append(BG)
 
